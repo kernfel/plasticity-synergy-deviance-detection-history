@@ -42,3 +42,43 @@ def get_boxcar_connections(xPre, yPre, xPost, yPost, radius,
                 nontargets = rng.choice(candidates, candidates.size - outdegree, replace=False, shuffle=False)
                 mask_2D[pre, nontargets] = 0
     return iPre[mask], iPost[mask], dist[mask]
+
+
+def create_weights(params, rng):
+    X, Y = generate_circle_locations(params['N'], params['r_dish'], rng)
+    iPre_exc, iPost_exc, distance_exc = get_boxcar_connections(
+        X[:params['N_exc']], Y[:params['N_exc']],
+        X, Y,
+        radius=params['r_exc'], outdegree=params['outdeg_exc'], rng=rng
+    )
+    iPre_inh, iPost_inh, distance_inh = get_boxcar_connections(
+        X[params['N_exc']:], Y[params['N_exc']:],
+        X, Y,
+        radius=params['r_inh'], outdegree=params['outdeg_inh'], rng=rng
+    )
+    
+    W_exc = rng.lognormal(params['w_exc_mean'], params['w_exc_sigma'], iPre_exc.shape)
+    W_inh = rng.lognormal(params['w_inh_mean'], params['w_inh_sigma'], iPre_inh.shape)
+    W = np.full((params['N'], params['N']), np.nan)
+    W[iPre_exc, iPost_exc] = W_exc
+    W[iPre_inh + params['N_exc'], iPost_inh] = W_inh
+
+    D = np.full_like(W, np.nan)
+    D[iPre_exc, iPost_exc] = distance_exc
+    D[iPre_inh, iPost_inh] = distance_inh
+
+    return X, Y, W, D
+
+
+def create_stimulus_locations(params):
+    theta = np.arange(params['N_stimuli']) / params['N_stimuli'] * 2*np.pi
+    r = params['stim_distribution_radius']
+    return r*np.cos(theta), r*np.sin(theta)
+
+def get_stimulated(X, Y, Xstim, Ystim, params):
+    idx = np.empty((params['N_stimuli'], params['neurons_per_stim']), dtype=int)
+    for i in range(params['N_stimuli']):
+        dist = get_distance(X, Y, Xstim[i], Ystim[i])
+        sorted = np.argsort(dist)
+        idx[i] = sorted[:params['neurons_per_stim']]
+    return idx
