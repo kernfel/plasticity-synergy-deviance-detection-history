@@ -1,10 +1,16 @@
-import numpy as np
+import numpy_ as np
+from brian2 import second
 
 
-def set_input_sequence(Net, sequence, params):
-    t = np.arange(len(sequence)) * params['ISI'] + params['settling_period']
+def set_input_sequence(Net, sequence, params, offset=0*second):
+    t = np.arange(len(sequence)) * params['ISI'] + params['settling_period'] + offset
+    if hasattr(Net, 'input_sequence'):
+        sequence = np.concatenate([Net.input_sequence, sequence])
+        t = np.concatenate([Net.input_sequence_t, t])
+    Net.input_sequence = sequence
+    Net.input_sequence_t = t
     Net['Input'].set_spikes(sequence, t)
-    return len(sequence) * params['ISI'] + params['settling_period']
+    return t[-1] + params['ISI']
 
 
 def create_oddball(Net, params, A, B):
