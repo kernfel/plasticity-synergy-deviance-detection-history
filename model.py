@@ -3,7 +3,7 @@ from brian2.only import *
 import spatial
 
 
-def create_excitatory(Net, X, Y, params, rng : np.random.Generator):
+def create_excitatory(Net, X, Y, params):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     excitatory_eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -35,7 +35,7 @@ def create_excitatory(Net, X, Y, params, rng : np.random.Generator):
     return Exc
 
 
-def create_inhibitory(Net, X, Y, params, rng : np.random.Generator):
+def create_inhibitory(Net, X, Y, params):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     inhibitory_eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -172,10 +172,10 @@ def create_network_reset(Net, dt):
     return resets
 
 
-def create_network(X, Y, Xstim, Ystim, W, D, params, rng, reset_dt=None, state_dt=None):
+def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None):
     Net = Network()
-    Exc = create_excitatory(Net, X, Y, params, rng)
-    Inh = create_inhibitory(Net, X, Y, params, rng)
+    Exc = create_excitatory(Net, X, Y, params)
+    Inh = create_inhibitory(Net, X, Y, params)
     Syn_EE, Syn_EI = create_excitatory_synapses(Net, params, Exc, Inh, W, D)
     Syn_IE, Syn_II = create_inhibitory_synapses(Net, params, Exc, Inh, W, D)
     Input, Input_Exc, Input_Inh = create_input(Net, X, Y, Xstim, Ystim, params, Exc, Inh)
