@@ -22,14 +22,13 @@ def create_excitatory(Net, X, Y, params):
     Exc = NeuronGroup(params['N_exc'], excitatory_eqn, threshold=excitatory_threshold, reset=excitatory_reset, refractory=params['refractory_exc'],
                     method='euler', namespace=params, name='Exc', dt=params['dt'])
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
-    voltage_init = 'rand() * (v_threshold - v_reset) + v_reset'
-    Exc.v = voltage_init
+    Exc.v = params['voltage_init']
     Exc.th_adapt = 0
     Exc.g_exc, Exc.g_inh = 0, 0
     Exc.add_attribute('dynamic_variables')
     Exc.add_attribute('dynamic_variable_initial')
     Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh']
-    Exc.dynamic_variable_initial = [voltage_init, '0 * volt', 0, 0]
+    Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0]
 
     Net.add(Exc)
     return Exc
@@ -50,13 +49,12 @@ def create_inhibitory(Net, X, Y, params):
     Inh = NeuronGroup(params['N_inh'], inhibitory_eqn, threshold=inhibitory_threshold, reset=inhibitory_reset, refractory=params['refractory_inh'],
                     method='euler', namespace=params, name='Inh', dt=params['dt'])
     Inh.x, Inh.y = X[params['N_exc']:], Y[params['N_exc']:]
-    voltage_init = 'rand() * (v_threshold - v_reset) + v_reset'
-    Inh.v = voltage_init
+    Inh.v = params['voltage_init']
     Inh.g_exc, Inh.g_inh = 0, 0
     Inh.add_attribute('dynamic_variables')
     Inh.add_attribute('dynamic_variable_initial')
     Inh.dynamic_variables = ['v', 'g_exc', 'g_inh']
-    Inh.dynamic_variable_initial = [voltage_init, 0, 0]
+    Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0]
 
     Net.add(Inh)
     return Inh
