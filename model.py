@@ -29,7 +29,7 @@ def create_excitatory(Net, X, Y, params, rng : np.random.Generator):
     Exc.add_attribute('dynamic_variables')
     Exc.add_attribute('dynamic_variable_initial')
     Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh']
-    Exc.dynamic_variable_initial = [voltage_init, 0, 0, 0]
+    Exc.dynamic_variable_initial = [voltage_init, '0 * volt', 0, 0]
 
     Net.add(Exc)
     return Exc
@@ -163,12 +163,12 @@ def create_network_reset(Net, dt):
     for obj in Net:
         if hasattr(obj, 'dynamic_variables') and hasattr(obj, 'dynamic_variable_initial'):
             reset = '\n'.join([f'{var} = {init}'
-                              for var, init in zip(obj.dynamic_variables, obj.dynamic_variable_init)
+                              for var, init in zip(obj.dynamic_variables, obj.dynamic_variable_initial)
                               if init is not None])
             if len(reset):
                 reg = obj.run_regularly(reset, dt=dt)
                 resets.append(reg)
-    Net.add(*reg)
+    Net.add(*resets)
     return resets
 
 
