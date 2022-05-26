@@ -20,7 +20,7 @@ def create_excitatory(Net, X, Y, params, rng : np.random.Generator):
     '''
 
     Exc = NeuronGroup(params['N_exc'], excitatory_eqn, threshold=excitatory_threshold, reset=excitatory_reset, refractory=params['refractory_exc'],
-                    method='euler', namespace=params, name='Exc')
+                    method='euler', namespace=params, name='Exc', dt=params['dt'])
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
     voltage_init = 'rand() * (v_threshold - v_reset) + v_reset'
     Exc.v = voltage_init
@@ -48,7 +48,7 @@ def create_inhibitory(Net, X, Y, params, rng : np.random.Generator):
     inhibitory_reset = 'v = v_reset'
 
     Inh = NeuronGroup(params['N_inh'], inhibitory_eqn, threshold=inhibitory_threshold, reset=inhibitory_reset, refractory=params['refractory_inh'],
-                    method='euler', namespace=params, name='Inh')
+                    method='euler', namespace=params, name='Inh', dt=params['dt'])
     Inh.x, Inh.y = X[params['N_exc']:], Y[params['N_exc']:]
     voltage_init = 'rand() * (v_threshold - v_reset) + v_reset'
     Inh.v = voltage_init
@@ -74,7 +74,7 @@ def create_excitatory_synapses(Net, params, Exc, Inh, W, D):
     iPre_ee, iPost_ee = np.nonzero(~np.isnan(W[:params['N_exc'], :params['N_exc']]))
     iPre_ei, iPost_ei = np.nonzero(~np.isnan(W[:params['N_exc'], params['N_exc']:]))
 
-    Syn_EE = Synapses(Exc, Exc, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EE')
+    Syn_EE = Synapses(Exc, Exc, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EE', dt=params['dt'])
     Syn_EE.connect(i=iPre_ee, j=iPost_ee)
     Syn_EE.w = W[iPre_ee, iPost_ee].ravel()
     Syn_EE.xr = 1
@@ -85,7 +85,7 @@ def create_excitatory_synapses(Net, params, Exc, Inh, W, D):
     Syn_EE.add_attribute('num_synapses')
     Syn_EE.num_synapses = len(iPre_ee)
 
-    Syn_EI = Synapses(Exc, Inh, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EI')
+    Syn_EI = Synapses(Exc, Inh, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EI', dt=params['dt'])
     Syn_EI.connect(i=iPre_ei, j=iPost_ei)
     Syn_EI.w = W[iPre_ei, iPost_ei + params['N_exc']].ravel()
     Syn_EI.xr = 1
@@ -108,11 +108,11 @@ def create_inhibitory_synapses(Net, params, Exc, Inh, W, D):
     iPre_ie, iPost_ie = np.nonzero(~np.isnan(W[params['N_exc']:, :params['N_exc']]))
     iPre_ii, iPost_ii = np.nonzero(~np.isnan(W[params['N_exc']:, params['N_exc']:]))
 
-    Syn_IE = Synapses(Inh, Exc, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact', name='IE')
+    Syn_IE = Synapses(Inh, Exc, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact', name='IE', dt=params['dt'])
     Syn_IE.connect(i=iPre_ie, j=iPost_ie)
     Syn_IE.w = W[iPre_ie + params['N_exc'], iPost_ie].ravel()
 
-    Syn_II = Synapses(Inh, Inh, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact', name='II')
+    Syn_II = Synapses(Inh, Inh, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact', name='II', dt=params['dt'])
     Syn_II.connect(i=iPre_ii, j=iPost_ii)
     Syn_II.w = W[iPre_ii + params['N_exc'], iPost_ii + params['N_exc']].ravel()
 
@@ -121,16 +121,16 @@ def create_inhibitory_synapses(Net, params, Exc, Inh, W, D):
 
 
 def create_input(Net, X, Y, Xstim, Ystim, params, Exc, Inh):
-    Input = SpikeGeneratorGroup(params['N_stimuli'], [], []*ms, name='Input')
+    Input = SpikeGeneratorGroup(params['N_stimuli'], [], []*ms, name='Input', dt=params['dt'])
     idx = spatial.get_stimulated(X, Y, Xstim, Ystim, params)
     
     Input_Exc = Synapses(Input, Exc, name='Input_Exc', method='exact',
-                         on_pre=f'g_exc_post += {params["input_strength"]}')
+                         on_pre=f'g_exc_post += {params["input_strength"]}', dt=params['dt'])
     e = np.nonzero(idx < params['N_exc'])
     Input_Exc.connect(i=e[0], j=idx[e])
     
     Input_Inh = Synapses(Input, Inh, name='Input_Inh', method='exact',
-                         on_pre=f'g_exc_post += {params["input_strength"]}')
+                         on_pre=f'g_exc_post += {params["input_strength"]}', dt=params['dt'])
     i = np.nonzero(idx >= params['N_exc'])
     Input_Inh.connect(i=i[0], j=idx[i] - params['N_exc'])
 
