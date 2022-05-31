@@ -13,16 +13,16 @@ def set_input_sequence(Net, sequence, params, offset=0*second):
     return t[-1] + params['ISI']
 
 
-def create_oddball(Net, params, A, B):
+def create_oddball(Net, params, A, B, offset=0*second):
     sequence = np.tile([A] * (params['sequence_length']-1) + [B], params['sequence_count'])
-    return sequence, set_input_sequence(Net, sequence, params)
+    return sequence, set_input_sequence(Net, sequence, params, offset=offset)
 
 
-def create_MSC(Net, params, rng : np.random.Generator):
+def create_MSC(Net, params, rng : np.random.Generator, offset=0*second):
     if params.get('fully_random_msc', False):
         sequence = rng.choice(params['N_stimuli'], params['sequence_length']*params['sequence_count'])
     else:
         base_sequence = np.arange(params['N_stimuli'])
         rng.shuffle(base_sequence)
         sequence = np.tile(base_sequence, params['sequence_count'])
-    return sequence, set_input_sequence(Net, sequence, params)
+    return sequence, set_input_sequence(Net, sequence, params, offset=offset)
