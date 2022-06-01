@@ -3,7 +3,7 @@ from brian2.only import *
 import spatial
 
 
-def create_excitatory(Net, X, Y, params):
+def create_excitatory(Net, X, Y, params, include_synaptic_dynamics):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     excitatory_eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -18,17 +18,28 @@ def create_excitatory(Net, X, Y, params):
         v = v_reset
         th_adapt += th_ampl
     '''
+    if include_synaptic_dynamics:
+        excitatory_eqn += '''
+        dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec : 1
+        '''
+        excitatory_reset += '''
+        synaptic_xr -= U*synaptic_xr
+        '''
 
     Exc = NeuronGroup(params['N_exc'], excitatory_eqn, threshold=excitatory_threshold, reset=excitatory_reset, refractory=params['refractory_exc'],
                     method='euler', namespace=params, name='Exc', dt=params['dt'])
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
-    Exc.v = params['voltage_init']
-    Exc.th_adapt = 0
-    Exc.g_exc, Exc.g_inh = 0, 0
     Exc.add_attribute('dynamic_variables')
     Exc.add_attribute('dynamic_variable_initial')
+    Exc.add_attribute('record_dynamics')
     Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh']
     Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0]
+    if include_synaptic_dynamics:
+        Exc.dynamic_variables.append('synaptic_xr')
+        Exc.dynamic_variable_initial.append(1)
+    
+    for var, value in zip(Exc.dynamic_variables, Exc.dynamic_variable_initial):
+        setattr(Exc, var, value)
 
     Net.add(Exc)
     return Exc
@@ -53,6 +64,7 @@ def create_inhibitory(Net, X, Y, params):
     Inh.g_exc, Inh.g_inh = 0, 0
     Inh.add_attribute('dynamic_variables')
     Inh.add_attribute('dynamic_variable_initial')
+    Inh.add_attribute('record_dynamics')
     Inh.dynamic_variables = ['v', 'g_exc', 'g_inh']
     Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0]
 
@@ -80,8 +92,6 @@ def create_excitatory_synapses(Net, params, Exc, Inh, W, D):
     Syn_EE.add_attribute('dynamic_variable_initial')
     Syn_EE.dynamic_variables = ['xr']
     Syn_EE.dynamic_variable_initial = [1]
-    Syn_EE.add_attribute('num_synapses')
-    Syn_EE.num_synapses = len(iPre_ee)
 
     Syn_EI = Synapses(Exc, Inh, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EI', dt=params['dt'])
     Syn_EI.connect(i=iPre_ei, j=iPost_ei)
@@ -91,8 +101,6 @@ def create_excitatory_synapses(Net, params, Exc, Inh, W, D):
     Syn_EI.add_attribute('dynamic_variable_initial')
     Syn_EI.dynamic_variables = ['xr']
     Syn_EI.dynamic_variable_initial = [1]
-    Syn_EI.add_attribute('num_synapses')
-    Syn_EI.num_synapses = len(iPre_ei)
 
     Net.add(Syn_EE, Syn_EI)
     return Syn_EE, Syn_EI
@@ -147,7 +155,7 @@ def create_statemonitors(Net, dt):
     monitors = []
     clock = Clock(dt)
     for obj in Net:
-        if hasattr(obj, 'dynamic_variables'):
+        if hasattr(obj, 'dynamic_variables') and hasattr(obj, 'record_dynamics'):
             monitor = StateMonitor(
                 obj, obj.dynamic_variables, name=f'StateMon_{obj.name}', clock=clock,
                 record=range(obj.num_synapses) if hasattr(obj, 'num_synapses') else True)
@@ -172,7 +180,7 @@ def create_network_reset(Net, dt):
 
 def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None):
     Net = Network()
-    Exc = create_excitatory(Net, X, Y, params)
+    Exc = create_excitatory(Net, X, Y, params, state_dt is not None)
     Inh = create_inhibitory(Net, X, Y, params)
     Syn_EE, Syn_EI = create_excitatory_synapses(Net, params, Exc, Inh, W, D)
     Syn_IE, Syn_II = create_inhibitory_synapses(Net, params, Exc, Inh, W, D)
