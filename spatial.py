@@ -57,8 +57,13 @@ def create_weights(params, rng):
         radius=params['r_inh'], outdegree=params['outdeg_inh'], rng=rng
     )
     
-    W_exc = rng.lognormal(params['w_exc_mean'], params['w_exc_sigma'], iPre_exc.shape)
-    W_inh = rng.lognormal(params['w_inh_mean'], params['w_inh_sigma'], iPre_inh.shape)
+    distribution = params.get('weight_distribution', 'lognormal')
+    if distribution == 'lognormal':
+        W_exc = rng.lognormal(params['w_exc_mean'], params['w_exc_sigma'], iPre_exc.shape)
+        W_inh = rng.lognormal(params['w_inh_mean'], params['w_inh_sigma'], iPre_inh.shape)
+    elif distribution == 'singular':
+        W_exc = params['w_exc_mean']
+        W_inh = params['w_inh_mean']
     W = np.full((params['N'], params['N']), np.nan)
     W[iPre_exc, iPost_exc] = W_exc
     W[iPre_inh + params['N_exc'], iPost_inh] = W_inh
