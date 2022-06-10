@@ -94,33 +94,25 @@ def populate_spike_results(Net, params, results, episode=0):
         results['xr'] = np.concatenate([Net['StateMon_Exc'].synaptic_xr[:, tpulse_all], ones_inhibitory], axis=0)
 
 
-def get_pulse_response(params, results, target_stim):
+def get_infused_histogram(params, results, target_stim, infusion):
     '''
-    Computes
-    - the pulse-triggered spike histogram of each neuron as a (N, t) ndarray
-    - the mean input delivered by each source, in short-term depression modulated fractional spikes, as a (N,) ndarray.
+    Computes the pulse-triggered spike histogram of each neuron as a (N, t) ndarray,
+    but instead of adding 1 for each spike, it adds `infusion(pulse, indices, ticks)`,
+    where `indices` and `ticks` are the firing neurons and corresponding time points
+    in the given `pulse`.
+    Note that this operates on raw results, and pulse indices thus correspond to the
+    index in the raw sequence.
     '''
     pulse_ids = np.flatnonzero(results['Seq'] == target_stim)
-    # if pulse_ids[0] == 0:  # Ignore pulse 0
-    #     pulse_ids = pulse_ids[1:]
     npulses = len(pulse_ids)
-    
-    spike_hist = np.zeros((params['N'], int(params['ISI']/params['dt'] +.5)))
-    for p in pulse_ids:
-        i, t = results['pulsed_i'][p], results['pulsed_t'][p]
-        spike_hist[i, (t/params['dt'] +.5).astype(int)] += 1
-    spike_hist /= npulses
-    
-    if 'pulsed_xr' in results:
-        xr_sum = np.zeros(params['N'])
-        for p in pulse_ids:
-            i, xr = results['pulsed_i'][p], results['pulsed_xr'][p]
-            np.add.at(xr_sum, i, xr)
-        xr_sum /= npulses
-    else:
-        xr_sum = None
-    
-    return spike_hist, xr_sum
+
+    hist = np.zeros((params['N'], int(params['ISI']/params['dt'] +.5)))
+    for pulse in pulse_ids:
+        i, t = results['pulsed_i'][pulse], results['pulsed_t'][pulse]
+        t = (t/params['dt'] +.5).astype(int)
+        hist[i, t] += infusion(pulse, i, t)
+    hist /= npulses
+    return hist
 
 
 def quantify_presynaptic(W, params, typed_results):
@@ -155,9 +147,10 @@ def get_results(Net, params, W, all_results):
             pulse_mask = results['Seq'] == results_dict['stimulus']
             
             out['nspikes'] = results['pulsed_nspikes'][pulse_mask].mean(0)
-            out['spike_hist'], out['xr_sum'] = get_pulse_response(params, results, results_dict['stimulus'])
+            out['spike_hist'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda *args: 1)
             
             if 'StateMon_Exc' in Net:
+                out['xr_sum'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda p,i,t: results['xr'][i,p,t]).sum(1)
                 out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
                 out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
                 out['pulse_onset_xr'] = results['xr'][:, pulse_mask, 0].T
