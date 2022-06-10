@@ -192,4 +192,5 @@ def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=Non
         state_monitors = create_statemonitors(Net, state_dt)
     if reset_dt is not None:
         resets = create_network_reset(Net, reset_dt)
+    Net.reset_dt = reset_dt
     return Net
