@@ -19,12 +19,12 @@ def create_oddball(Net, params, A, B, offset=0*second):
 
 
 def create_MSC(Net, params, rng : np.random.Generator, offset=0*second):
+    sequence = np.arange(params['N_stimuli'])
     if params.get('fully_random_msc', False):
-        sequence = rng.choice(params['N_stimuli'], params['sequence_length']*params['sequence_count'])
-    else:
-        base_sequence = np.arange(params['N_stimuli'])
-        rng.shuffle(base_sequence)
-        sequence = np.tile(base_sequence, params['sequence_count'])
+        sequence = np.tile(sequence, params['sequence_count'])
+    rng.shuffle(sequence)
+    if not params.get('fully_random_msc', False):
+        sequence = np.tile(sequence, params['sequence_count'])
     return sequence, set_input_sequence(Net, sequence, params, offset=offset)
 
 
