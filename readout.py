@@ -94,24 +94,31 @@ def populate_spike_results(Net, params, results, episode=0):
         results['xr'] = np.concatenate([Net['StateMon_Exc'].synaptic_xr[:, tpulse_all], ones_inhibitory], axis=0)
 
 
-def get_infused_histogram(params, results, target_stim, infusion):
+def get_infused_histogram(params, results, target_stim, infusion, norm=False):
     '''
     Computes the pulse-triggered spike histogram of each neuron as a (N, t) ndarray,
-    but instead of adding 1 for each spike, it adds `infusion(pulse, indices, ticks)`,
+    but instead of adding 1 for each spike, it adds `infusion(results, pulse, indices, ticks)`,
     where `indices` and `ticks` are the firing neurons and corresponding time points
     in the given `pulse`.
-    Note that this operates on raw results, and pulse indices thus correspond to the
+    Note that this operates on **raw results**, and pulse indices thus correspond to the
     index in the raw sequence.
+    If `norm=False` (default), results are normalised by number of pulses.
+    Otherwise, if `norm=True`, results are normalised by the number of spikes in each bin.
     '''
     pulse_ids = np.flatnonzero(results['Seq'] == target_stim)
     npulses = len(pulse_ids)
 
     hist = np.zeros((params['N'], int(params['ISI']/params['dt'] +.5)))
+    hist_1 = np.zeros_like(hist)
     for pulse in pulse_ids:
         i, t = results['pulsed_i'][pulse], results['pulsed_t'][pulse]
         t = (t/params['dt'] +.5).astype(int)
-        hist[i, t] += infusion(pulse, i, t)
-    hist /= npulses
+        hist[i, t] += infusion(results, pulse, i, t)
+        hist_1[i, t] += 1
+    if norm:
+        np.divide(hist, hist_1, where=hist_1>0, out=hist)
+    else:
+        hist /= npulses
     return hist
 
 
@@ -150,7 +157,7 @@ def get_results(Net, params, W, all_results):
             out['spike_hist'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda *args: 1)
             
             if 'StateMon_Exc' in Net:
-                out['xr_sum'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda p,i,t: results['xr'][i,p,t]).sum(1)
+                out['xr_sum'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda r,p,i,t: r['xr'][i,p,t]).sum(1)
                 out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
                 out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
                 out['pulse_onset_xr'] = results['xr'][:, pulse_mask, 0].T
