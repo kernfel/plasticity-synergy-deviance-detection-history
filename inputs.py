@@ -26,3 +26,8 @@ def create_MSC(Net, params, rng : np.random.Generator, offset=0*second):
         rng.shuffle(base_sequence)
         sequence = np.tile(base_sequence, params['sequence_count'])
     return sequence, set_input_sequence(Net, sequence, params, offset=offset)
+
+
+def get_episode_duration(params):
+    data_duration = params['ISI']*params['sequence_length']*params['sequence_count']
+    return params['settling_period'] + data_duration
