@@ -87,11 +87,19 @@ def populate_spike_results(Net, params, results, episode=0):
         tpulse_all = ((t_in_pulse[None, :] + tpulse[:, None]) / params['dt'] + .5).astype(int)
         ones_inhibitory = np.ones((params['N_inh'],) + tpulse_all.shape)
 
-        results['g_exc'] = np.concatenate([Net['StateMon_Exc'].g_exc[:, tpulse_all], Net['StateMon_Inh'].g_exc[:, tpulse_all]], axis=0)
-        results['g_inh'] = np.concatenate([Net['StateMon_Exc'].g_inh[:, tpulse_all], Net['StateMon_Inh'].g_inh[:, tpulse_all]], axis=0)
-        results['v'] = np.concatenate([Net['StateMon_Exc'].v[:, tpulse_all], Net['StateMon_Inh'].v[:, tpulse_all]], axis=0)
-        results['th_adapt'] = np.concatenate([Net['StateMon_Exc'].th_adapt[:, tpulse_all], ones_inhibitory*0*mV], axis=0)
-        results['xr'] = np.concatenate([Net['StateMon_Exc'].synaptic_xr[:, tpulse_all], ones_inhibitory], axis=0)
+        dynamic_variables = {}
+        for varname, init in zip(Net['Exc'].dynamic_variables, Net['Exc'].dynamic_variable_initial):
+            var_exc = getattr(Net['StateMon_Exc'], varname)[:, tpulse_all]
+            try:
+                var_inh = getattr(Net['StateMon_Inh'], varname)[:, tpulse_all]
+            except AttributeError:
+                if type(init) == str:
+                    var_inh = ones_inhibitory * eval(init, globals(), params)
+                else:
+                    var_inh = ones_inhibitory * init
+            dynamic_variables[varname] = np.concatenate([var_exc, var_inh], axis=0)
+        dynamic_variables['xr'] = dynamic_variables.pop('synaptic_xr')
+        results.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
 
 
 def get_infused_histogram(params, results, target_stim, infusion, norm=False):
@@ -161,7 +169,7 @@ def get_results(Net, params, W, all_results):
                 out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
                 out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
                 out['pulse_onset_xr'] = results['xr'][:, pulse_mask, 0].T
-                for key in ('g_exc', 'g_inh', 'v', 'th_adapt', 'xr'):
+                for key in results['dynamic_variables']:
                     out[key] = results[key][:, pulse_mask]
 
 
