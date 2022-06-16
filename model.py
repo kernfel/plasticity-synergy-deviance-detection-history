@@ -71,8 +71,6 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
     Inh = NeuronGroup(params['N_inh'], inhibitory_eqn, threshold=inhibitory_threshold, reset=inhibitory_reset, refractory=params['refractory_inh'],
                     method='euler', namespace=params, name='Inh', clock=clock)
     Inh.x, Inh.y = X[params['N_exc']:], Y[params['N_exc']:]
-    Inh.v = params['voltage_init']
-    Inh.g_exc, Inh.g_inh = 0, 0
     Inh.add_attribute('dynamic_variables')
     Inh.add_attribute('dynamic_variable_initial')
     Inh.add_attribute('record_dynamics')
@@ -81,6 +79,9 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
     if extras:
         Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
         Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
+    
+    for var, value in zip(Inh.dynamic_variables, Inh.dynamic_variable_initial):
+        setattr(Inh, var, value)
 
     Net.add(Inh)
     return Inh
