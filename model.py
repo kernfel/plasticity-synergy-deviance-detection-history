@@ -4,11 +4,12 @@ import spatial
 
 
 def create_excitatory(Net, X, Y, params, clock, extras):
-    # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
+    # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     excitatory_eqn = '''
-        dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
+        dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
+        dg_input/dt = -g_input/tau_ampa : 1
         dth_adapt/dt = -th_adapt/th_tau : volt
         x : meter
         y : meter
@@ -22,7 +23,7 @@ def create_excitatory(Net, X, Y, params, clock, extras):
         excitatory_eqn += '''
         dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec : 1
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
+        du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
         '''
         excitatory_reset += '''
         synaptic_xr -= U*synaptic_xr
@@ -35,8 +36,8 @@ def create_excitatory(Net, X, Y, params, clock, extras):
     Exc.add_attribute('dynamic_variables')
     Exc.add_attribute('dynamic_variable_initial')
     Exc.add_attribute('record_dynamics')
-    Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh']
-    Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0]
+    Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh', 'g_input']
+    Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0, 0]
     if extras:
         Exc.dynamic_variables.extend(('synaptic_xr', 'g_exc_nox', 'u'))
         Exc.dynamic_variable_initial.extend((1, 0, params['voltage_init']))
@@ -49,11 +50,12 @@ def create_excitatory(Net, X, Y, params, clock, extras):
 
 
 def create_inhibitory(Net, X, Y, params, clock, extras):
-    # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
+    # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     inhibitory_eqn = '''
-        dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
+        dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
+        dg_input/dt = -g_input/tau_ampa : 1
         x : meter
         y : meter
     '''
@@ -62,7 +64,7 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
     if extras:
         inhibitory_eqn += '''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
+        du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
         '''
         inhibitory_reset += '''
         u = v_reset
@@ -74,8 +76,8 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
     Inh.add_attribute('dynamic_variables')
     Inh.add_attribute('dynamic_variable_initial')
     Inh.add_attribute('record_dynamics')
-    Inh.dynamic_variables = ['v', 'g_exc', 'g_inh']
-    Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0]
+    Inh.dynamic_variables = ['v', 'g_exc', 'g_inh', 'g_input']
+    Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0, 0]
     if extras:
         Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
         Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
@@ -150,12 +152,12 @@ def create_input(Net, X, Y, Xstim, Ystim, params, clock, Exc, Inh):
     idx = spatial.get_stimulated(X, Y, Xstim, Ystim, params)
     
     Input_Exc = Synapses(Input, Exc, name='Input_Exc', method='exact',
-                         on_pre=f'g_exc_post += {params["input_strength"]}', clock=clock)
+                         on_pre=f'g_input_post += {params["input_strength"]}', clock=clock)
     e = np.nonzero(idx < params['N_exc'])
     Input_Exc.connect(i=e[0], j=idx[e])
     
     Input_Inh = Synapses(Input, Inh, name='Input_Inh', method='exact',
-                         on_pre=f'g_exc_post += {params["input_strength"]}', clock=clock)
+                         on_pre=f'g_input_post += {params["input_strength"]}', clock=clock)
     i = np.nonzero(idx >= params['N_exc'])
     Input_Inh.connect(i=i[0], j=idx[i] - params['N_exc'])
 
