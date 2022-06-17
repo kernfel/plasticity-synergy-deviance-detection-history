@@ -193,3 +193,18 @@ def setup_run(Net, params, rng, stimuli):
             out[S2]['Dev'] = {'Seq': oddball1, 'episode': episode}
             episode += 2
     return out, T
+
+
+def compress_results(all_results, discard_source=True):
+    tmax = 0
+    for r in all_results.values():
+        for key in ('std', 'dev', 'msc'):
+            tmax = max(tmax, np.max(np.nonzero(r[key]['spike_hist'].sum(0,1))[2]) + 1)
+    for r in all_results.values():
+        for varname in r['Std']['dynamic_variables'].keys():
+            for key in ('std', 'dev', 'msc'):
+                r[key][varname] = r[key][varname][:, :, :tmax]
+    if discard_source:
+        for r in all_results.values():
+            for key in ('Std', 'Dev', 'MSC'):
+                r.pop(key)
