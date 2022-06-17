@@ -80,8 +80,8 @@ def populate_spike_results(Net, params, results, episode=0):
         np.add.at(results['pulsed_nspikes'][j], i, 1)
     if 'StateMon_Exc' in Net:
         if results['spike_xr'] is not None:
-        results['pulsed_xr'] = list(map(lambda tp: tp[0], iterspikes(
-            results['spike_xr'], results['spike_t'], npulses, params['ISI'])))
+            results['pulsed_xr'] = list(map(lambda tp: tp[0], iterspikes(
+                results['spike_xr'], results['spike_t'], npulses, params['ISI'])))
         
         tpulse = np.arange(npulses)*params['ISI'] + episode*npulses*params['ISI'] + (episode+1)*params['settling_period']
         t_in_pulse = np.arange(stop=params['ISI'], step=params['dt'])
@@ -102,7 +102,7 @@ def populate_spike_results(Net, params, results, episode=0):
                     var_inh = ones_inhibitory * init
             dynamic_variables[varname] = np.concatenate([var_exc, var_inh], axis=0)
         if 'synaptic_xr' in dynamic_variables:
-        dynamic_variables['xr'] = dynamic_variables.pop('synaptic_xr')
+            dynamic_variables['xr'] = dynamic_variables.pop('synaptic_xr')
         results.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
 
 
@@ -170,11 +170,11 @@ def get_results(Net, params, W, all_results):
             
             if 'StateMon_Exc' in Net:
                 if 'xr' in results:
-                out['xr_sum'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda r,p,i,t: r['xr'][i,p,t]).sum(1)
-                out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
+                    out['xr_sum'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda r,p,i,t: r['xr'][i,p,t]).sum(1)
+                    out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
                     out['pulse_onset_xr'] = results['xr'][:, pulse_mask, 0].T
                 if 'th_adapt' in results:
-                out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
+                    out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
                 for key in results['dynamic_variables']:
                     out[key] = results[key][:, pulse_mask]
 
@@ -205,9 +205,9 @@ def compress_results(all_results, discard_source=True):
     tmax = 0
     for r in all_results.values():
         for key in ('std', 'dev', 'msc'):
-            tmax = max(tmax, np.max(np.nonzero(r[key]['spike_hist'].sum(0,1))[2]) + 1)
+            tmax = max(tmax, np.max(np.nonzero(r[key]['spike_hist'])[1]) + 1)
     for r in all_results.values():
-        for varname in r['Std']['dynamic_variables'].keys():
+        for varname in r['Std']['dynamic_variables']:
             for key in ('std', 'dev', 'msc'):
                 r[key][varname] = r[key][varname][:, :, :tmax]
     if discard_source:
