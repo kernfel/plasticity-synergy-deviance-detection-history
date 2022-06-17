@@ -184,11 +184,9 @@ def setup_run(Net, params, rng, stimuli):
     for i, S1 in enumerate(stim_names):
         for S2 in stim_names[i+1:]:
             oddball1, T = inputs.create_oddball(
-                Net, params, stimuli[S1],
-                stimuli[S2], offset=T)
+                Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
             oddball2, T = inputs.create_oddball(
-                Net, params, stimuli[S2],
-                stimuli[S1], offset=T)
+                Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
             out[S1]['Std'] = {'Seq': oddball1, 'episode': episode}
             out[S1]['Dev'] = {'Seq': oddball2, 'episode': episode+1}
             out[S2]['Std'] = {'Seq': oddball2, 'episode': episode+1}
