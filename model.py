@@ -100,7 +100,7 @@ def create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
     '''
     if extras:
         excitatory_on_pre += '''
-        g_exc_nox_post += w
+        g_exc_nox_post += U*w
         '''
     iPre_ee, iPost_ee = np.nonzero(~np.isnan(W[:params['N_exc'], :params['N_exc']]))
     iPre_ei, iPost_ei = np.nonzero(~np.isnan(W[:params['N_exc'], params['N_exc']:]))
