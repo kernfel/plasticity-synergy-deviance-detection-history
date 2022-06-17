@@ -35,7 +35,6 @@ def create_excitatory(Net, X, Y, params, clock, extras):
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
     Exc.add_attribute('dynamic_variables')
     Exc.add_attribute('dynamic_variable_initial')
-    Exc.add_attribute('record_dynamics')
     Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh', 'g_input']
     Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0, 0]
     if extras:
@@ -75,7 +74,6 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
     Inh.x, Inh.y = X[params['N_exc']:], Y[params['N_exc']:]
     Inh.add_attribute('dynamic_variables')
     Inh.add_attribute('dynamic_variable_initial')
-    Inh.add_attribute('record_dynamics')
     Inh.dynamic_variables = ['v', 'g_exc', 'g_inh', 'g_input']
     Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0, 0]
     if extras:
@@ -172,16 +170,18 @@ def create_spikemonitors(Net, Exc, Inh):
     return SpikeMon_Exc, SpikeMon_Inh
 
 
-def create_statemonitors(Net, dt, when):
+def create_statemonitors(Net, dt, variables, when):
     monitors = []
     clock = Clock(dt)
     for obj in Net:
-        if hasattr(obj, 'dynamic_variables') and hasattr(obj, 'record_dynamics'):
-            monitor = StateMonitor(
-                obj, obj.dynamic_variables, name=f'StateMon_{obj.name}', clock=clock,
-                record=range(obj.num_synapses) if hasattr(obj, 'num_synapses') else True,
-                when=when)
-            monitors.append(monitor)
+        if hasattr(obj, 'dynamic_variables'):
+            varnames = [var for var in obj.dynamic_variables if variables is None or var in variables]
+            if len(varnames):
+                monitor = StateMonitor(
+                    obj, varnames, name=f'StateMon_{obj.name}', clock=clock,
+                    record=range(obj.num_synapses) if hasattr(obj, 'num_synapses') else True,
+                    when=when)
+                monitors.append(monitor)
     Net.add(*monitors)
     return monitors
 
@@ -200,7 +200,7 @@ def create_network_reset(Net, dt):
     return resets
 
 
-def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None, when='before_resets', extras=False):
+def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None, state_vars=None, when='before_resets', extras=False):
     Net = Network()
     defaultclock.dt = params['dt']
     clock = defaultclock
@@ -211,7 +211,10 @@ def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=Non
     Input, Input_Exc, Input_Inh = create_input(Net, X, Y, Xstim, Ystim, params, clock, Exc, Inh)
     SpikeMon_Exc, SpikeMon_Inh = create_spikemonitors(Net, Exc, Inh)
     if state_dt is not None:
-        state_monitors = create_statemonitors(Net, state_dt, when)
+        if state_vars is None:
+            state_vars = Exc.dynamic_variables + Inh.dynamic_variables
+        if len(state_vars):
+            state_monitors = create_statemonitors(Net, state_dt, variables=state_vars, when=when)
     if reset_dt is not None:
         resets = create_network_reset(Net, reset_dt)
     Net.reset_dt = reset_dt
