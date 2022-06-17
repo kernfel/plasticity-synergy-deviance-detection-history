@@ -172,14 +172,15 @@ def create_spikemonitors(Net, Exc, Inh):
     return SpikeMon_Exc, SpikeMon_Inh
 
 
-def create_statemonitors(Net, dt):
+def create_statemonitors(Net, dt, when):
     monitors = []
     clock = Clock(dt)
     for obj in Net:
         if hasattr(obj, 'dynamic_variables') and hasattr(obj, 'record_dynamics'):
             monitor = StateMonitor(
                 obj, obj.dynamic_variables, name=f'StateMon_{obj.name}', clock=clock,
-                record=range(obj.num_synapses) if hasattr(obj, 'num_synapses') else True)
+                record=range(obj.num_synapses) if hasattr(obj, 'num_synapses') else True,
+                when=when)
             monitors.append(monitor)
     Net.add(*monitors)
     return monitors
@@ -199,7 +200,7 @@ def create_network_reset(Net, dt):
     return resets
 
 
-def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None, extras=False):
+def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None, when='before_resets', extras=False):
     Net = Network()
     defaultclock.dt = params['dt']
     clock = defaultclock
@@ -210,7 +211,7 @@ def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=Non
     Input, Input_Exc, Input_Inh = create_input(Net, X, Y, Xstim, Ystim, params, clock, Exc, Inh)
     SpikeMon_Exc, SpikeMon_Inh = create_spikemonitors(Net, Exc, Inh)
     if state_dt is not None:
-        state_monitors = create_statemonitors(Net, state_dt)
+        state_monitors = create_statemonitors(Net, state_dt, when)
     if reset_dt is not None:
         resets = create_network_reset(Net, reset_dt)
     Net.reset_dt = reset_dt
