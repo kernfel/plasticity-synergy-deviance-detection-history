@@ -88,7 +88,7 @@ params = {
 
 N_networks = 10
 ISIs = (100, 200, 300, 500, 1000, 2000)
-fbase = '/data/felix/culture/isi1_'
+fbase = '/data/felix/culture/isi0_'
 fname = fbase + 'net{net}_isi{isi}_STD{std}_TA{ta}.h5'
 figfile = fbase + 'indices.png'
 idxfile = fbase + 'idx.h5'
