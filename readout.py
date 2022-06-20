@@ -207,9 +207,10 @@ def compress_results(all_results, discard_source=True):
         for key in ('std', 'dev', 'msc'):
             tmax = max(tmax, np.max(np.nonzero(r[key]['spike_hist'])[1]) + 1)
     for r in all_results.values():
-        for varname in r['Std']['dynamic_variables']:
-            for key in ('std', 'dev', 'msc'):
-                r[key][varname] = r[key][varname][:, :, :tmax]
+        if 'dynamic_variables' in r['Std']:
+            for varname in r['Std']['dynamic_variables']:
+                for key in ('std', 'dev', 'msc'):
+                    r[key][varname] = r[key][varname][:, :, :tmax]
     if discard_source:
         for r in all_results.values():
             for key in ('Std', 'Dev', 'MSC'):
