@@ -178,7 +178,7 @@ def get_results(Net, params, W, all_results):
                     out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
 
 
-def setup_run(Net, params, rng, stimuli):
+def setup_run(Net, params, rng, stimuli, pairings=None):
     d = inputs.get_episode_duration(params)
     if Net.reset_dt != d:
         warn(f'Net reset_dt ({Net.reset_dt}) does not match episode duration ({d})')
@@ -186,8 +186,20 @@ def setup_run(Net, params, rng, stimuli):
     MSC, T = inputs.create_MSC(Net, params, rng)
     out = {name: {'stimulus': stim, 'MSC': {'Seq': MSC, 'episode': 0}} for name, stim in stimuli.items()}
     episode = 1
-    for i, S1 in enumerate(stim_names):
-        for S2 in stim_names[i+1:]:
+    if pairings is None:
+        for i, S1 in enumerate(stim_names):
+            for S2 in stim_names[i+1:]:
+                oddball1, T = inputs.create_oddball(
+                    Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
+                oddball2, T = inputs.create_oddball(
+                    Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
+                out[S1]['Std'] = {'Seq': oddball1, 'episode': episode}
+                out[S1]['Dev'] = {'Seq': oddball2, 'episode': episode+1}
+                out[S2]['Std'] = {'Seq': oddball2, 'episode': episode+1}
+                out[S2]['Dev'] = {'Seq': oddball1, 'episode': episode}
+                episode += 2
+    else:
+        for S1, S2 in pairings:
             oddball1, T = inputs.create_oddball(
                 Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
             oddball2, T = inputs.create_oddball(
@@ -197,6 +209,9 @@ def setup_run(Net, params, rng, stimuli):
             out[S2]['Std'] = {'Seq': oddball2, 'episode': episode+1}
             out[S2]['Dev'] = {'Seq': oddball1, 'episode': episode}
             episode += 2
+        for name in stimuli.keys():
+            if 'Std' not in out[name]:
+                out.pop(name)
     return out, T
 
 
