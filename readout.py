@@ -106,31 +106,28 @@ def populate_spike_results(Net, params, results, episode=0):
         results.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
 
 
-def get_infused_histogram(params, results, target_stim, infusion, norm=False):
+def get_infused_histogram(params, typed_results, infusion, norm=False, default=0, **kwargs):
     '''
     Computes the pulse-triggered spike histogram of each neuron as a (N, t) ndarray,
-    but instead of adding 1 for each spike, it adds `infusion(results, pulse, indices, ticks)`,
+    but instead of adding 1 for each spike, it adds `infusion(typed_results, pulse, indices, ticks, **kwargs)`,
     where `indices` and `ticks` are the firing neurons and corresponding time points
     in the given `pulse`.
-    Note that this operates on **raw results**, and pulse indices thus correspond to the
-    index in the raw sequence.
+    Note that this operates on **typed results**, and pulse indices thus enumerate the pulses
+    of the given type (e.g. only A:deviant pulses)
     If `norm=False` (default), results are normalised by number of pulses.
     Otherwise, if `norm=True`, results are normalised by the number of spikes in each bin.
     '''
-    pulse_ids = np.flatnonzero(results['Seq'] == target_stim)
-    npulses = len(pulse_ids)
-
     hist = np.zeros((params['N'], int(params['ISI']/params['dt'] +.5)))
     hist_1 = np.zeros_like(hist)
-    for pulse in pulse_ids:
-        i, t = results['pulsed_i'][pulse], results['pulsed_t'][pulse]
+    for pulse, (i, t) in enumerate(zip(typed_results['pulsed_i'], typed_results['pulsed_t'])):
         t = (t/params['dt'] +.5).astype(int)
-        hist[i, t] += infusion(results, pulse, i, t)
+        hist[i, t] += infusion(typed_results, pulse, i, t, **kwargs)
         hist_1[i, t] += 1
     if norm:
         np.divide(hist, hist_1, where=hist_1>0, out=hist)
     else:
-        hist /= npulses
+        hist /= len(typed_results['pulsed_i'])
+    hist[hist_1==0] = default
     return hist
 
 
@@ -166,17 +163,19 @@ def get_results(Net, params, W, all_results):
             pulse_mask = results['Seq'] == results_dict['stimulus']
             
             out['nspikes'] = results['pulsed_nspikes'][pulse_mask].mean(0)
-            out['spike_hist'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda *args: 1)
+            out['pulsed_i'] = [j for i,j in enumerate(results['pulsed_i']) if results['Seq'][i] == results_dict['stimulus']]
+            out['pulsed_t'] = [j for i,j in enumerate(results['pulsed_t']) if results['Seq'][i] == results_dict['stimulus']]
+            out['spike_hist'] = get_infused_histogram(params, out, lambda *args: 1)
             
             if 'StateMon_Exc' in Net:
+                for key in results['dynamic_variables']:
+                    out[key] = results[key][:, pulse_mask]
                 if 'xr' in results:
-                    out['xr_sum'] = get_infused_histogram(params, results, results_dict['stimulus'], lambda r,p,i,t: r['xr'][i,p,t]).sum(1)
+                    out['xr_sum'] = get_infused_histogram(params, out, lambda r,p,i,t: r['xr'][i,p,t]).sum(1)
                     out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
                     out['pulse_onset_xr'] = results['xr'][:, pulse_mask, 0].T
                 if 'th_adapt' in results:
                     out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
-                for key in results['dynamic_variables']:
-                    out[key] = results[key][:, pulse_mask]
 
 
 def setup_run(Net, params, rng, stimuli):
