@@ -3,6 +3,7 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 import deepdish as dd
 from brian2.only import *
+import brian2genn
 
 # for the IDE:
 import numpy_ as np
@@ -14,8 +15,7 @@ from spike_utils import iterspikes
 
 
 rng = np.random.default_rng()
-set_device('cpp_standalone')
-prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() - 2
+set_device('genn', directory='GPU0')
 
 
 N = 1000
@@ -86,7 +86,7 @@ params = {
 }
 
 
-N_networks = 10
+N_networks = 50
 ISIs = (100, 200, 300, 500, 1000, 2000)
 fbase = '/data/felix/culture/isi1_'
 fname = fbase + 'net{net}_isi{isi}_STD{std}_TA{ta}.h5'
@@ -113,8 +113,7 @@ for net in range(N_networks):
                 device.activate()
                 Net = model.create_network(
                     X, Y, Xstim, Ystim, W, D, mod_params,
-                    reset_dt=inputs.get_episode_duration(mod_params),
-                    state_dt=params['dt'], when='before_resets', state_vars=['v', 'u'], extras=True)
+                    reset_dt=inputs.get_episode_duration(mod_params))
                 all_results, T = readout.setup_run(
                     Net, mod_params, rng, {key: j for j, key in enumerate('ABCDE')}, pairings=(('A','B'), ('C','E')))
                 Net.run(T)
@@ -131,7 +130,7 @@ for net in range(N_networks):
                         nspikes[key] += results[key]['nspikes'].sum()
                 ddi[i, std, ta, net] = (nspikes['dev'] - nspikes['msc']) / (nspikes['dev'] + nspikes['msc'])
                 ai[i, std, ta, net] = (nspikes['msc'] - nspikes['std']) / (nspikes['msc'] + nspikes['std'])
-            print(f'Completed ISI sweep {(net+1)*(std+1)*(ta+1)}/{N_networks*4} after {(time.time()-Tstart)/60:.1f} minutes.')
+            print(f'Completed GPU ISI sweep {(net+1)*(std+1)*(ta+1)}/{N_networks*4} after {(time.time()-Tstart)/60:.1f} minutes.')
 
     fig, axs = plt.subplots(2, figsize=(9,12))
     for ax, idx, label in zip(axs, (ddi, ai), ('Deviance detection', 'Adaptation')):
