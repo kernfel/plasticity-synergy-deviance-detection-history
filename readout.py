@@ -47,42 +47,15 @@ def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
     return I, T, xr
 
 
-def get_neuron_spike_counts(N, pulsed_i, sequence, target_item):
-    numspikes = np.zeros(N, dtype=int)
-    for pulse_idx, pulse_item in enumerate(sequence):
-        if pulse_item == target_item:
-            np.add.at(numspikes, pulsed_i[pulse_idx], 1)
-    return numspikes
-
-
-def get_pulse_spike_counts_TMP(t, ISI):
-    pulse_number = t // ISI
-    steps = np.flatnonzero(np.diff(pulse_number) > 0)
-    internal_num_spikes = np.diff(steps)
-    num_spikes = np.concatenate([[steps[0]+1], internal_num_spikes, [0]])
-    num_spikes[-1] = len(t) - np.sum(num_spikes)
-    return num_spikes
-
-
-def get_pulse_spike_counts(Net, params, episode=0):
-    I, T, _ = get_episode_spikes(Net, params, episode=episode)
-    return get_pulse_spike_counts_TMP(T, params['ISI'])
-
-
-def populate_spike_results(Net, params, results, episode=0):
+def get_raw_results(Net, params, episode=0):
+    raw = {}
     npulses = params['sequence_length']*params['sequence_count']
-    results['nspikes'] = get_pulse_spike_counts(Net, params, episode)
-    results['spike_i'], results['spike_t'], results['spike_xr'] = get_episode_spikes(Net, params, episode=episode, with_xr=True)
-    results['pulsed_i'], results['pulsed_t'] = zip(*list(iterspikes(
-        results['spike_i'], results['spike_t'], npulses, params['ISI'])))
-    results['pulsed_nspikes'] = np.zeros((len(results['pulsed_i']), params['N']), int)
-    for j, i in enumerate(results['pulsed_i']):
-        np.add.at(results['pulsed_nspikes'][j], i, 1)
+    spike_i, spike_t, _ = get_episode_spikes(Net, params, episode=episode)
+    raw['pulsed_i'], raw['pulsed_t'] = zip(*list(iterspikes(spike_i, spike_t, npulses, params['ISI'])))
+    raw['pulsed_nspikes'] = np.zeros((len(raw['pulsed_i']), params['N']), int)
+    for j, i in enumerate(raw['pulsed_i']):
+        np.add.at(raw['pulsed_nspikes'][j], i, 1)
     if 'StateMon_Exc' in Net:
-        if results['spike_xr'] is not None:
-            results['pulsed_xr'] = list(map(lambda tp: tp[0], iterspikes(
-                results['spike_xr'], results['spike_t'], npulses, params['ISI'])))
-        
         tpulse = np.arange(npulses)*params['ISI'] + episode*npulses*params['ISI'] + (episode+1)*params['settling_period']
         t_in_pulse = np.arange(stop=params['ISI'], step=params['dt'])
         tpulse_all = ((t_in_pulse[None, :] + tpulse[:, None]) / params['dt'] + .5).astype(int)
@@ -103,7 +76,8 @@ def populate_spike_results(Net, params, results, episode=0):
             dynamic_variables[varname] = np.concatenate([var_exc, var_inh], axis=0)
         if 'synaptic_xr' in dynamic_variables:
             dynamic_variables['xr'] = dynamic_variables.pop('synaptic_xr')
-        results.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
+        raw.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
+    return raw
 
 
 def get_infused_histogram(params, typed_results, infusion, norm=False, default=0, **kwargs):
@@ -131,7 +105,7 @@ def get_infused_histogram(params, typed_results, infusion, norm=False, default=0
     return hist
 
 
-def quantify_presynaptic(W, params, typed_results):
+def quantify_presynaptic(W, params, hist, xr):
     '''
     Finds:
     - The cumulative presynaptic input over STATIC weights (static_exc, static_inh: two (N,) vectors).
@@ -139,7 +113,6 @@ def quantify_presynaptic(W, params, typed_results):
     - The factor by which static_exc is reduced due to short-term depression (depression_factor: one (N,) vector)
     Note: "input" here refers to the increments applied to the target's synaptic conductance.
     '''
-    hist, xr = typed_results['spike_hist'], typed_results['xr_sum']
     exc = np.zeros(params['N'], bool)
     exc[:params['N_exc']] = True
     W0 = W.copy()
@@ -152,30 +125,25 @@ def quantify_presynaptic(W, params, typed_results):
 
 
 def get_results(Net, params, W, all_results):
-    populated_episodes = []
+    raw_results = {}
     for results_dict in all_results.values():
         for rkey in ('Std', 'Dev', 'MSC'):
-            results = results_dict[rkey]
-            if results['episode'] not in populated_episodes:
-                populate_spike_results(Net, params, results, results['episode'])
+            episode = results_dict[rkey]
+            if episode['episode'] not in raw_results:
+                raw_results[episode['episode']] = get_raw_results(Net, params, episode['episode'])
+            raw = raw_results[episode['episode']]
 
             out = results_dict[rkey.lower()] = {}
-            pulse_mask = results['Seq'] == results_dict['stimulus']
+            pulse_mask = episode['Seq'] == results_dict['stimulus']
             
-            out['nspikes'] = results['pulsed_nspikes'][pulse_mask].mean(0)
-            out['pulsed_i'] = [j for i,j in enumerate(results['pulsed_i']) if results['Seq'][i] == results_dict['stimulus']]
-            out['pulsed_t'] = [j for i,j in enumerate(results['pulsed_t']) if results['Seq'][i] == results_dict['stimulus']]
+            out['nspikes'] = raw['pulsed_nspikes'][pulse_mask].mean(0)
+            out['pulsed_i'] = [j for i,j in enumerate(raw['pulsed_i']) if episode['Seq'][i] == results_dict['stimulus']]
+            out['pulsed_t'] = [j for i,j in enumerate(raw['pulsed_t']) if episode['Seq'][i] == results_dict['stimulus']]
             out['spike_hist'] = get_infused_histogram(params, out, lambda *args: 1)
             
             if 'StateMon_Exc' in Net:
-                for key in results['dynamic_variables']:
-                    out[key] = results[key][:, pulse_mask]
-                if 'xr' in results:
-                    out['xr_sum'] = get_infused_histogram(params, out, lambda r,p,i,t: r['xr'][i,p,t]).sum(1)
-                    out['inputs_exc'], out['inputs_inh'], out['depression_factor'] = quantify_presynaptic(W, params, out)
-                    out['pulse_onset_xr'] = results['xr'][:, pulse_mask, 0].T
-                if 'th_adapt' in results:
-                    out['pulse_onset_th_adapt'] = results['th_adapt'][:, pulse_mask, 0].T
+                for key in raw['dynamic_variables']:
+                    out[key] = raw[key][:, pulse_mask]
 
 
 def setup_run(Net, params, rng, stimuli, pairings=None):
