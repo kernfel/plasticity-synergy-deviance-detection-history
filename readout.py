@@ -65,9 +65,10 @@ def get_raw_results(Net, params, episode=0):
         for varname, init in zip(Net['Exc'].dynamic_variables, Net['Exc'].dynamic_variable_initial):
             if not hasattr(Net['StateMon_Exc'], varname):
                 continue
-            var_exc = getattr(Net['StateMon_Exc'], varname)[:, tpulse_all]
+            tpulse_all_ = tpulse_all + (1 if varname.endswith('_delayed') else 0)
+            var_exc = getattr(Net['StateMon_Exc'], varname)[:, tpulse_all_]
             try:
-                var_inh = getattr(Net['StateMon_Inh'], varname)[:, tpulse_all]
+                var_inh = getattr(Net['StateMon_Inh'], varname)[:, tpulse_all_]
             except AttributeError:
                 if type(init) == str:
                     var_inh = ones_inhibitory * eval(init, globals(), params)
@@ -186,6 +187,7 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
             'std': {S1: episode, S2: episode+1},
             'dev': {S1: episode+1, S2: episode}})
         episode += 2
+    T += params['dt']
     return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
 
 
@@ -196,6 +198,7 @@ def repeat_run(Net, params, template):
     T = 0*second
     for seq in template['sequences']:
         T = inputs.set_input_sequence(Net, seq, params, T)
+    T += params['dt']
     return {**{k: template[k] for k in ('sequences', 'pairs', 'stimuli')}, 'runtime': T}
 
 
