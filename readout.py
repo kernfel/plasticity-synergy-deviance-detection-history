@@ -156,7 +156,7 @@ def get_results(Net, params, rundata):
 def setup_run(Net, params, rng, stimuli, pairings=None):
     d = inputs.get_episode_duration(params)
     if Net.reset_dt != d:
-        warn(f'Net reset_dt ({Net.reset_dt}) does not match episode duration ({d})')
+        warn(f'Net reset_dt ({Net.reset_dt}) does not match episode duration ({d}).')
     stim_names = list(stimuli.keys())
     if pairings is None:
         pairings = [(stim_names[2*i], stim_names[2*i+1]) for i in range(len(stim_names)//2)]
@@ -179,6 +179,17 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
             'dev': {S1: episode+1, S2: episode}})
         episode += 2
     return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
+
+
+def repeat_run(Net, params, rundata):
+    d = inputs.get_episode_duration(params)
+    if Net.reset_dt != d:
+        warn(f'Net reset_dt ({Net.reset_dt}) does not match episode duration ({d}).')
+    T = 0*second
+    for seq in rundata['sequences']:
+        T = inputs.set_input_sequence(Net, seq, params, T)
+    rundata['runtime'] = T
+    return rundata
 
 
 def compress_results(rundata):
