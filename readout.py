@@ -124,7 +124,7 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
-def get_results(Net, params, rundata):
+def get_results(Net, params, rundata, replace_delayed=True):
     raw_results = {}
     outputs = []
     for pair in rundata['pairs']:
@@ -147,7 +147,11 @@ def get_results(Net, params, rundata):
                 results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
                 
                 for key in dynamic_variables:
-                    results[key] = raw[key][:, pulse_mask]
+                    if replace_delayed and key.endswith('_delayed'):
+                        okey = key[:-len('_delayed')]
+                    else:
+                        okey = key
+                    results[okey] = raw[key][:, pulse_mask]
     rundata['results'] = outputs
     rundata['dynamic_variables'] = dynamic_variables
     return outputs
