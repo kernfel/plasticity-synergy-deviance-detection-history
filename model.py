@@ -288,4 +288,5 @@ def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
     if reset_dt is not None:
         resets = create_network_reset(Net, reset_dt)
     Net.reset_dt = reset_dt
+    Net.suffix = suffix
     return Net

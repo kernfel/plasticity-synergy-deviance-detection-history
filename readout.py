@@ -17,7 +17,7 @@ def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
     data_duration = full_episode_duration - params['settling_period']
     t0 = episode * full_episode_duration + params['settling_period']
     for k in ['Exc', 'Inh']:
-        t, i = Net[f'SpikeMon_{k}'].t, Net[f'SpikeMon_{k}'].i + offset
+        t, i = Net[f'SpikeMon_{k}'+Net.suffix].t, Net[f'SpikeMon_{k}'+Net.suffix].i + offset
         offset += Net[k].N
         mask = (t >= t0 - 0.5*params['dt']) & (t < t0 + data_duration - 0.5*params['dt'])
         T.append(t[mask])
@@ -28,7 +28,7 @@ def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
         sorted = np.argsort(T)
         T, I = T[sorted], I[sorted]
     
-    if with_xr and 'StateMon_Exc' in Net and hasattr(Net['StateMon_Exc'], 'synaptic_xr'):
+    if with_xr and 'StateMon_Exc'+Net.suffix in Net and hasattr(Net['StateMon_Exc'+Net.suffix], 'synaptic_xr'):
         i0 = int(t0/params['dt'] + 0.5)
         try:
             import brian2genn
@@ -38,7 +38,7 @@ def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
             pass
         iend = i0 + int(data_duration/params['dt'] + 0.5)
         iT = (T/params['dt'] + 0.5).astype(int)
-        xr_rec = Net['StateMon_Exc'].synaptic_xr[:, i0:iend]
+        xr_rec = Net['StateMon_Exc'+Net.suffix].synaptic_xr[:, i0:iend]
         xr = np.ones(I.shape)
         Imask = I < params['N_exc']
         xr[Imask] = xr_rec[I[Imask], iT[Imask]]
@@ -55,20 +55,20 @@ def get_raw_results(Net, params, episode=0):
     raw['pulsed_nspikes'] = np.zeros((len(raw['pulsed_i']), params['N']), int)
     for j, i in enumerate(raw['pulsed_i']):
         np.add.at(raw['pulsed_nspikes'][j], i, 1)
-    if 'StateMon_Exc' in Net:
+    if 'StateMon_Exc'+Net.suffix in Net:
         tpulse = np.arange(npulses)*params['ISI'] + episode*npulses*params['ISI'] + (episode+1)*params['settling_period']
         t_in_pulse = np.arange(stop=params['ISI'], step=params['dt'])
         tpulse_all = ((t_in_pulse[None, :] + tpulse[:, None]) / params['dt'] + .5).astype(int)
         ones_inhibitory = np.ones((params['N_inh'],) + tpulse_all.shape)
 
         dynamic_variables = {}
-        for varname, init in zip(Net['Exc'].dynamic_variables, Net['Exc'].dynamic_variable_initial):
-            if not hasattr(Net['StateMon_Exc'], varname):
+        for varname, init in zip(Net['Exc'+Net.suffix].dynamic_variables, Net['Exc'+Net.suffix].dynamic_variable_initial):
+            if not hasattr(Net['StateMon_Exc'+Net.suffix], varname):
                 continue
             tpulse_all_ = tpulse_all + (1 if varname.endswith('_delayed') else 0)
-            var_exc = getattr(Net['StateMon_Exc'], varname)[:, tpulse_all_]
+            var_exc = getattr(Net['StateMon_Exc'+Net.suffix], varname)[:, tpulse_all_]
             try:
-                var_inh = getattr(Net['StateMon_Inh'], varname)[:, tpulse_all_]
+                var_inh = getattr(Net['StateMon_Inh'+Net.suffix], varname)[:, tpulse_all_]
             except AttributeError:
                 if type(init) == str:
                     var_inh = ones_inhibitory * eval(init, globals(), params)

@@ -9,7 +9,7 @@ def set_input_sequence(Net, sequence, params, offset=0*second):
         t = np.concatenate([Net.input_sequence_t, t])
     Net.input_sequence = sequence
     Net.input_sequence_t = t
-    Net['Input'].set_spikes(sequence, t)
+    Net['Input'+Net.suffix].set_spikes(sequence, t)
     return t[-1] + params['ISI']
 
 
