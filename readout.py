@@ -181,17 +181,17 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
     return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
 
 
-def compress_results(all_results, discard_source=True):
+def compress_results(rundata):
     tmax = 0
-    for r in all_results.values():
-        for key in ('std', 'dev', 'msc'):
-            tmax = max(tmax, np.max(np.nonzero(r[key]['spike_hist'])[1]) + 1)
-    for r in all_results.values():
-        if 'dynamic_variables' in r['Std']:
-            for varname in r['Std']['dynamic_variables']:
-                for key in ('std', 'dev', 'msc'):
-                    r[key][varname] = r[key][varname][:, :, :tmax]
-    if discard_source:
-        for r in all_results.values():
-            for key in ('Std', 'Dev', 'MSC'):
-                r.pop(key)
+    for rpair in rundata['results']:
+        for rstim in rpair.values():
+            for rtype in rstim.values():
+                tmax = max(tmax, np.max(np.nonzero(rtype['spike_hist'])[1]) + 1)
+                tceil = rtype['spike_hist'].shape[1]
+    if tmax < tceil:
+        for rpair in rundata['results']:
+            for rstim in rpair.values():
+                for rtype in rstim.values():
+                    rtype['spike_hist'] = rtype['spike_hist'][:, :tmax]
+                    for varname in rundata['dynamic_variables']:
+                        rtype[varname] = rtype[varname][:, :, :tmax]
