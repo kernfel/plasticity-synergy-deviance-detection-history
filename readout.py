@@ -185,15 +185,14 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
     return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
 
 
-def repeat_run(Net, params, rundata):
+def repeat_run(Net, params, template):
     d = inputs.get_episode_duration(params)
     if Net.reset_dt != d:
         warn(f'Net reset_dt ({Net.reset_dt}) does not match episode duration ({d}).')
     T = 0*second
-    for seq in rundata['sequences']:
+    for seq in template['sequences']:
         T = inputs.set_input_sequence(Net, seq, params, T)
-    rundata['runtime'] = T
-    return rundata
+    return {**{k: template[k] for k in ('sequences', 'pairs', 'stimuli')}, 'runtime': T}
 
 
 def compress_results(rundata):
