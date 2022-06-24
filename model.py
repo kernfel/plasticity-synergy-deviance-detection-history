@@ -135,7 +135,7 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, enfor
 
 def create_surrogate(Net, Group, spikes, clock):
     Surrogate = SpikeGeneratorGroup(Group.N, spikes['i'], spikes['t'] - clock.dt, clock=clock, sorted=True, name=f'Surrogate_{Group.name}')
-    Enforcer = Synapses(Surrogate, Group, on_pre='spike_enforcer_post = 1', method='exact', name=f'Enforcer_{Group.name}')
+    Enforcer = Synapses(Surrogate, Group, on_pre='spike_enforcer_post += 1', method='exact', name=f'Enforcer_{Group.name}')
     Enforcer.connect(i='j')
     Net.add(Surrogate, Enforcer)
     return Surrogate, Enforcer
