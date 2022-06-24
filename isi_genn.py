@@ -14,8 +14,12 @@ np.concatenate = concatenate
 from spike_utils import iterspikes
 
 
+gpuid = 0
 rng = np.random.default_rng()
-set_device('genn', directory='GPU0')
+device_args = dict(directory=f'GPU{gpuid}')
+set_device('genn', **device_args)
+prefs.devices.genn.cuda_backend.device_select='MANUAL'
+prefs.devices.genn.cuda_backend.manual_device=gpuid
 
 
 N = 1000
@@ -82,67 +86,97 @@ params = {
     'sequence_length': 5,
     'sequence_count': 100,
     'fully_random_msc': True,
-    'fully_random_oddball': True
+    'fully_random_oddball': True,
+    'ISI': 100*ms
 }
 
 
 N_networks = 50
+N_templates = 5
 ISIs = (100, 200, 300, 500, 1000, 2000)
-fbase = '/data/felix/culture/isi1_'
-fname = fbase + 'net{net}_isi{isi}_STD{std}_TA{ta}.h5'
+fbase = '/data/felix/culture/isi2_'
+fname = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}.h5'
 figfile = fbase + 'indices.png'
 idxfile = fbase + 'idx.h5'
 netfile = fbase + 'net{net}.h5'
 
 
 Xstim, Ystim = spatial.create_stimulus_locations(params)
+stimuli = {key: j for j, key in enumerate('ABCDE')}
+pairings=(('A','B'), ('C','E'))
 
-ddi, ai = np.empty((2, len(ISIs), 2, 2, N_networks))
+# Set up input template
+X, Y, W, D = spatial.create_weights(params, rng)
+Net = model.create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=inputs.get_episode_duration(params))
+templates = [readout.setup_run(Net, params, rng, stimuli, pairings) for _ in range(N_templates)]
+
+ddi, ai = np.empty((2, N_networks, 2, 2, len(ISIs), N_templates, len(pairings), 2))
+
 for net in range(N_networks):
     X, Y, W, D = spatial.create_weights(params, rng)
     try:
         dd.io.save(netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
     except Exception as e:
         print(e)
-    for std, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
-        for ta, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
+    for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
+        for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
             Tstart = time.time()
-            for i, isi in enumerate(ISIs):
-                mod_params = {**params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
-                device.reinit()
-                device.activate()
-                Net = model.create_network(
-                    X, Y, Xstim, Ystim, W, D, mod_params,
-                    reset_dt=inputs.get_episode_duration(mod_params))
-                all_results, T = readout.setup_run(
-                    Net, mod_params, rng, {key: j for j, key in enumerate('ABCDE')}, pairings=(('A','B'), ('C','E')))
-                Net.run(T)
-                readout.get_results(Net, mod_params, W, all_results)
-                readout.compress_results(all_results)
-                try:
-                    dd.io.save(fname.format(**locals()), dict(all_results=all_results, params=mod_params))
-                except Exception as e:
-                    print(e)
+            for iISI, isi in enumerate(ISIs):
+                for templ, template in enumerate(templates):
+                    device.reinit()
+                    device.activate(**device_args)
+                    
+                    mod_params = {**params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
+                    delayed_vars = ['v', 'th_adapt'] if TA else ['v']
+                    state_vars = [f'{v}_delayed' for v in delayed_vars]
+                    Net = model.create_network(
+                        X, Y, Xstim, Ystim, W, D, mod_params,
+                        reset_dt=inputs.get_episode_duration(mod_params),
+                        delayed_variables=delayed_vars,
+                        state_dt=params['dt'], state_vars=state_vars, when='end')
+                    
+                    rundata = readout.repeat_run(Net, mod_params, template)
+                    rundata['params'] = mod_params
+                    Net.run(rundata['runtime'])
+                    readout.get_results(Net, mod_params, rundata)
 
-                nspikes = {key: 0 for key in ('std', 'dev', 'msc')}
-                for results in all_results.values():
-                    for key in nspikes.keys():
-                        nspikes[key] += results[key]['nspikes'].sum()
-                ddi[i, std, ta, net] = (nspikes['dev'] - nspikes['msc']) / (nspikes['dev'] + nspikes['msc'])
-                ai[i, std, ta, net] = (nspikes['msc'] - nspikes['std']) / (nspikes['msc'] + nspikes['std'])
-            print(f'Completed GPU ISI sweep {(net+1)*(std+1)*(ta+1)}/{N_networks*4} after {(time.time()-Tstart)/60:.1f} minutes.')
+                    if STD:
+                        surrogate = {k: {'t': Net[f'SpikeMon_{k}'].t[:], 'i': Net[f'SpikeMon_{k}'].i[:]} for k in ('Exc', 'Inh')}
 
-    fig, axs = plt.subplots(2, figsize=(9,12))
-    for ax, idx, label in zip(axs, (ddi, ai), ('Deviance detection', 'Adaptation')):
-        ax.plot(ISIs, idx[:, 0, 0, :net+1].mean(1), label='No plasticity')
-        ax.plot(ISIs, idx[:, 1, 0, :net+1].mean(1), label='Short-term depression')
-        ax.plot(ISIs, idx[:, 0, 1, :net+1].mean(1), label='Threshold adaptation')
-        ax.plot(ISIs, idx[:, 1, 1, :net+1].mean(1), label='Both STD and TA')
-        ax.plot(ISIs, idx[:, 0, 1, :net+1].mean(1) + idx[:, 1, 0, :net+1].mean(1), '--', label='Summation')
-        ax.set_ylabel(f'{label} index')
-        ax.set_xlabel('ISI (ms)')
-        ax.legend()
-        ax.axhline(0, color='lightgrey', lw=1)
-    plt.savefig(figfile.format(**locals()))
+                        device.reinit()
+                        device.activate(**device_args)
+                        
+                        mod_params_U = {**mod_params, 'tau_rec': 0*ms}
+                        Net = model.create_network(
+                            X, Y, Xstim, Ystim, W, D, mod_params_U,
+                            reset_dt=inputs.get_episode_duration(mod_params_U),
+                            delayed_variables=['v'],
+                            state_dt=params['dt'], state_vars=['v_delayed'], when='end',
+                            surrogate=surrogate, suffix='_surrogate')
+                        
+                        rundata_U = readout.repeat_run(Net, mod_params_U, template)
+                        Net.run(rundata_U['runtime'])
+                        readout.get_results(Net, mod_params_U, rundata_U)
+                        for V_pair, U_pair in zip(rundata['results'], rundata_U['results']):
+                            for S in V_pair.keys():
+                                for tp in V_pair[S].keys():
+                                    V_pair[S][tp]['u'] = U_pair[S][tp]['v']
+                        rundata['dynamic_variables'].append('u')
+                    
+                    readout.compress_results(rundata)
+                    try:
+                        dd.io.save(fname.format(**locals()), rundata)
+                    except Exception as e:
+                        print(e)
 
-    dd.io.save(idxfile, dict(ddi=ddi, ai=ai))
+                    for ipair, pairdata in enumerate(rundata['results']):
+                        for istim, stimdata in enumerate(pairdata.values()):
+                            std, dev, msc = [stimdata[key]['nspikes'].sum() for key in ('std', 'dev', 'msc')]
+                            ddi[net, STD, TA, iISI, templ, ipair, istim] = (dev-msc)/(dev+msc)
+                            ai[net, STD, TA, iISI, templ, ipair, istim] = (msc-std)/(msc+std)
+                    try:
+                        dd.io.save(idxfile, dict(ddi=ddi, ai=ai, net=net, STD=STD, TA=TA, iISI=iISI, templ=templ))
+                    except Exception as e:
+                        print(e)
+
+            print(f'Completed GPU ISI sweep {(net+1)*(STD+1)*(TA+1)*(templ+1)}/{N_networks*4*N_templates} after {(time.time()-Tstart)/60:.1f} minutes.')
