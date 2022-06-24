@@ -16,8 +16,8 @@ def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
     full_episode_duration = inputs.get_episode_duration(params)
     data_duration = full_episode_duration - params['settling_period']
     t0 = episode * full_episode_duration + params['settling_period']
-    for k in ['Exc', 'Inh']:
-        t, i = Net[f'SpikeMon_{k}'+Net.suffix].t, Net[f'SpikeMon_{k}'+Net.suffix].i + offset
+    for k in ['Exc'+Net.suffix, 'Inh'+Net.suffix]:
+        t, i = Net[f'SpikeMon_{k}'].t, Net[f'SpikeMon_{k}'].i + offset
         offset += Net[k].N
         mask = (t >= t0 - 0.5*params['dt']) & (t < t0 + data_duration - 0.5*params['dt'])
         T.append(t[mask])
