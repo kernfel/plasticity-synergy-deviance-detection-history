@@ -3,7 +3,7 @@ from brian2.only import *
 import spatial
 
 
-def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables=[]):
+def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, enforced_spikes):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -36,6 +36,12 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables=[]):
         '''
         if var in resets:
             resets = {f'{var}_delayed': f'= {var}', **resets}
+    if enforced_spikes:
+        eqn += '''
+        spike_enforcer : 1
+        '''
+        threshold = 'spike_enforcer > 0'
+        resets['spike_enforcer'] = '= 0'
         
 
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
@@ -52,6 +58,9 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables=[]):
     for var in delayed_variables:
         Exc.dynamic_variables.append(f'{var}_delayed')
         Exc.dynamic_variable_initial.append(Exc.dynamic_variable_initial[Exc.dynamic_variables.index(var)])
+    if enforced_spikes:
+        Exc.dynamic_variables.append('spike_enforcer')
+        Exc.dynamic_variable_initial.append(0)
     
     for var, value in zip(Exc.dynamic_variables, Exc.dynamic_variable_initial):
         setattr(Exc, var, value)
@@ -60,7 +69,7 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables=[]):
     return Exc
 
 
-def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables=[]):
+def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, enforced_spikes):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -87,6 +96,12 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables=[]):
         '''
         if var in resets:
             resets = {f'{var}_delayed': f'= {var}', **resets}
+    if enforced_spikes:
+        eqn += '''
+        spike_enforcer : 1
+        '''
+        threshold = 'spike_enforcer > 0'
+        resets['spike_enforcer'] = '= 0'
     
 
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
@@ -103,6 +118,9 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables=[]):
     for var in delayed_variables:
         Inh.dynamic_variables.append(f'{var}_delayed')
         Inh.dynamic_variable_initial.append(Inh.dynamic_variable_initial[Inh.dynamic_variables.index(var)])
+    if enforced_spikes:
+        Inh.dynamic_variables.append('spike_enforcer')
+        Inh.dynamic_variable_initial.append(0)
     
     for var, value in zip(Inh.dynamic_variables, Inh.dynamic_variable_initial):
         setattr(Inh, var, value)
@@ -111,7 +129,15 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables=[]):
     return Inh
 
 
-def create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
+def create_surrogate(Net, Group, spikes, clock):
+    Surrogate = SpikeGeneratorGroup(Group.N, spikes['i'], spikes['t'] - clock.dt, clock=clock, sorted=True, name=f'Surrogate_{Group.name}')
+    Enforcer = Synapses(Surrogate, Group, on_pre='spike_enforcer_post = 1', method='exact', name=f'Enforcer_{Group.name}')
+    Enforcer.connect(i='j')
+    Net.add(Surrogate, Enforcer)
+    return Surrogate, Enforcer
+
+
+def create_excitatory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extras, static_delay=None):
     excitatory_synapse = '''
         dxr/dt = (1-xr)/tau_rec : 1 (event-driven)
         w : 1
@@ -127,7 +153,8 @@ def create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
     iPre_ee, iPost_ee = np.nonzero(~np.isnan(W[:params['N_exc'], :params['N_exc']]))
     iPre_ei, iPost_ei = np.nonzero(~np.isnan(W[:params['N_exc'], params['N_exc']:]))
 
-    Syn_EE = Synapses(Exc, Exc, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EE', clock=clock)
+    Syn_EE = Synapses(presyn, Exc, excitatory_synapse, on_pre=excitatory_on_pre, method='exact',
+                      namespace=params, name='EE', clock=clock, delay=static_delay)
     Syn_EE.connect(i=iPre_ee, j=iPost_ee)
     Syn_EE.w = W[iPre_ee, iPost_ee].ravel()
     Syn_EE.xr = 1
@@ -136,7 +163,8 @@ def create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
     Syn_EE.dynamic_variables = ['xr']
     Syn_EE.dynamic_variable_initial = [1]
 
-    Syn_EI = Synapses(Exc, Inh, excitatory_synapse, on_pre=excitatory_on_pre, method='exact', namespace=params, name='EI', clock=clock)
+    Syn_EI = Synapses(presyn, Inh, excitatory_synapse, on_pre=excitatory_on_pre, method='exact',
+                      namespace=params, name='EI', clock=clock, delay=static_delay)
     Syn_EI.connect(i=iPre_ei, j=iPost_ei)
     Syn_EI.w = W[iPre_ei, iPost_ei + params['N_exc']].ravel()
     Syn_EI.xr = 1
@@ -149,7 +177,7 @@ def create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
     return Syn_EE, Syn_EI
 
 
-def create_inhibitory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
+def create_inhibitory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extras, static_delay=None):
     inhibitory_synapse = 'w : 1'
     inhibitory_on_pre = '''
         g_inh_post += w
@@ -157,11 +185,13 @@ def create_inhibitory_synapses(Net, params, clock, Exc, Inh, W, D, extras):
     iPre_ie, iPost_ie = np.nonzero(~np.isnan(W[params['N_exc']:, :params['N_exc']]))
     iPre_ii, iPost_ii = np.nonzero(~np.isnan(W[params['N_exc']:, params['N_exc']:]))
 
-    Syn_IE = Synapses(Inh, Exc, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact', name='IE', clock=clock)
+    Syn_IE = Synapses(presyn, Exc, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact',
+                      name='IE', clock=clock, delay=static_delay)
     Syn_IE.connect(i=iPre_ie, j=iPost_ie)
     Syn_IE.w = W[iPre_ie + params['N_exc'], iPost_ie].ravel()
 
-    Syn_II = Synapses(Inh, Inh, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact', name='II', clock=clock)
+    Syn_II = Synapses(presyn, Inh, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact',
+                      name='II', clock=clock, delay=static_delay)
     Syn_II.connect(i=iPre_ii, j=iPost_ii)
     Syn_II.w = W[iPre_ii + params['N_exc'], iPost_ii + params['N_exc']].ravel()
 
@@ -225,14 +255,25 @@ def create_network_reset(Net, dt):
 
 
 def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
-                   state_dt=None, state_vars=None, when='before_resets', extras=False, delayed_variables=[]):
+                   state_dt=None, state_vars=None, when='before_resets',
+                   extras=False, delayed_variables=[],
+                   surrogate={}):
     Net = Network()
     defaultclock.dt = params['dt']
     clock = defaultclock
-    Exc = create_excitatory(Net, X, Y, params, clock, extras, delayed_variables)
-    Inh = create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables)
-    Syn_EE, Syn_EI = create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras)
-    Syn_IE, Syn_II = create_inhibitory_synapses(Net, params, clock, Exc, Inh, W, D, extras)
+    Exc = create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, bool(surrogate))
+    Inh = create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, bool(surrogate))
+    if surrogate:
+        assert params['settling_period'] >= params['dt'], 'Surrogacy requires a settling period of at least 1 dt.'
+        presyn_Exc, enforcer_Exc = create_surrogate(Net, Exc, surrogate['Exc'], clock)
+        presyn_Inh, enforcer_Inh = create_surrogate(Net, Inh, surrogate['Inh'], clock)
+        static_delay = clock.dt
+    else:
+        presyn_Exc = Exc
+        presyn_Inh = Inh
+        static_delay = None
+    Syn_EE, Syn_EI = create_excitatory_synapses(Net, params, clock, presyn_Exc, Exc, Inh, W, D, extras, static_delay)
+    Syn_IE, Syn_II = create_inhibitory_synapses(Net, params, clock, presyn_Inh, Exc, Inh, W, D, extras, static_delay)
     Input, Input_Exc, Input_Inh = create_input(Net, X, Y, Xstim, Ystim, params, clock, Exc, Inh)
     SpikeMon_Exc, SpikeMon_Inh = create_spikemonitors(Net, Exc, Inh)
     if state_dt is not None:
