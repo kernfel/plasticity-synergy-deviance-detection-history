@@ -136,6 +136,7 @@ def get_results(Net, params, rundata):
                 episode = pair[key][S]
                 if episode not in raw_results:
                     raw_results[episode] = get_raw_results(Net, params, episode)
+                    dynamic_variables = raw_results[episode].get('dynamic_variables', [])
                 raw = raw_results[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 results = out[S][key] = {}
@@ -145,9 +146,10 @@ def get_results(Net, params, rundata):
                 results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
                 results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
                 
-                if 'dynamic_variables' in raw:
-                    for key in raw['dynamic_variables']:
-                        results[key] = raw[key][:, pulse_mask]
+                for key in dynamic_variables:
+                    results[key] = raw[key][:, pulse_mask]
+    rundata['results'] = outputs
+    rundata['dynamic_variables'] = dynamic_variables
     return outputs
 
 
