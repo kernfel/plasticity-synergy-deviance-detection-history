@@ -127,6 +127,7 @@ def quantify_presynaptic(W, params, hist, xr):
 def get_results(Net, params, rundata, replace_delayed=True):
     raw_results = {}
     outputs = []
+    dynamic_variables_out = []
     for pair in rundata['pairs']:
         out = {}
         outputs.append(out)
@@ -137,6 +138,13 @@ def get_results(Net, params, rundata, replace_delayed=True):
                 if episode not in raw_results:
                     raw_results[episode] = get_raw_results(Net, params, episode)
                     dynamic_variables = raw_results[episode].get('dynamic_variables', [])
+                    if len(dynamic_variables_out) != len(dynamic_variables):  # only once
+                        if replace_delayed:
+                            dynamic_variables_out = [v[:-len('_delayed')] if v.endswith('_delayed') else v
+                                                     for v in dynamic_variables]
+                        else:
+                            dynamic_variables_out = dynamic_variables
+
                 raw = raw_results[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 results = out[S][key] = {}
@@ -146,14 +154,10 @@ def get_results(Net, params, rundata, replace_delayed=True):
                 results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
                 results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
                 
-                for key in dynamic_variables:
-                    if replace_delayed and key.endswith('_delayed'):
-                        okey = key[:-len('_delayed')]
-                    else:
-                        okey = key
+                for key, okey in zip(dynamic_variables, dynamic_variables_out):
                     results[okey] = raw[key][:, pulse_mask]
     rundata['results'] = outputs
-    rundata['dynamic_variables'] = dynamic_variables
+    rundata['dynamic_variables'] = dynamic_variables_out
     return outputs
 
 
