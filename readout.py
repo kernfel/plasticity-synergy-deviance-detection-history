@@ -124,26 +124,31 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
-def get_results(Net, params, W, all_results):
+def get_results(Net, params, rundata):
     raw_results = {}
-    for results_dict in all_results.values():
-        for rkey in ('Std', 'Dev', 'MSC'):
-            episode = results_dict[rkey]
-            if episode['episode'] not in raw_results:
-                raw_results[episode['episode']] = get_raw_results(Net, params, episode['episode'])
-            raw = raw_results[episode['episode']]
-
-            out = results_dict[rkey.lower()] = {}
-            pulse_mask = episode['Seq'] == results_dict['stimulus']
-            
-            out['nspikes'] = raw['pulsed_nspikes'][pulse_mask].mean(0)
-            out['pulsed_i'] = [j for i,j in enumerate(raw['pulsed_i']) if episode['Seq'][i] == results_dict['stimulus']]
-            out['pulsed_t'] = [j for i,j in enumerate(raw['pulsed_t']) if episode['Seq'][i] == results_dict['stimulus']]
-            out['spike_hist'] = get_infused_histogram(params, out, lambda *args: 1)
-            
-            if 'StateMon_Exc' in Net:
-                for key in raw['dynamic_variables']:
-                    out[key] = raw[key][:, pulse_mask]
+    outputs = []
+    for pair in rundata['pairs']:
+        out = {}
+        outputs.append(out)
+        for S in (pair['S1'], pair['S2']):
+            out[S] = {}
+            for key in ('std', 'dev', 'msc'):
+                episode = pair[key][S]
+                if episode not in raw_results:
+                    raw_results[episode] = get_raw_results(Net, params, episode)
+                raw = raw_results[episode]
+                pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
+                results = out[S][key] = {}
+                
+                results['nspikes'] = raw['pulsed_nspikes'][pulse_mask].mean(0)
+                results['pulsed_i'] = [i for i, j in zip(raw['pulsed_i'], pulse_mask) if j]
+                results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
+                results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
+                
+                if 'dynamic_variables' in raw:
+                    for key in raw['dynamic_variables']:
+                        results[key] = raw[key][:, pulse_mask]
+    return outputs
 
 
 def setup_run(Net, params, rng, stimuli, pairings=None):
@@ -151,36 +156,27 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
     if Net.reset_dt != d:
         warn(f'Net reset_dt ({Net.reset_dt}) does not match episode duration ({d})')
     stim_names = list(stimuli.keys())
-    MSC, T = inputs.create_MSC(Net, params, rng)
-    out = {name: {'stimulus': stim, 'MSC': {'Seq': MSC, 'episode': 0}} for name, stim in stimuli.items()}
-    episode = 1
     if pairings is None:
-        for i, S1 in enumerate(stim_names):
-            for S2 in stim_names[i+1:]:
-                oddball1, T = inputs.create_oddball(
-                    Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
-                oddball2, T = inputs.create_oddball(
-                    Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
-                out[S1]['Std'] = {'Seq': oddball1, 'episode': episode}
-                out[S1]['Dev'] = {'Seq': oddball2, 'episode': episode+1}
-                out[S2]['Std'] = {'Seq': oddball2, 'episode': episode+1}
-                out[S2]['Dev'] = {'Seq': oddball1, 'episode': episode}
-                episode += 2
-    else:
-        for S1, S2 in pairings:
-            oddball1, T = inputs.create_oddball(
-                Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
-            oddball2, T = inputs.create_oddball(
-                Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
-            out[S1]['Std'] = {'Seq': oddball1, 'episode': episode}
-            out[S1]['Dev'] = {'Seq': oddball2, 'episode': episode+1}
-            out[S2]['Std'] = {'Seq': oddball2, 'episode': episode+1}
-            out[S2]['Dev'] = {'Seq': oddball1, 'episode': episode}
-            episode += 2
-        for name in stimuli.keys():
-            if 'Std' not in out[name]:
-                out.pop(name)
-    return out, T
+        pairings = [(stim_names[2*i], stim_names[2*i+1]) for i in range(len(stim_names)//2)]
+    assert len(pairings)
+    
+    MSC, T = inputs.create_MSC(Net, params, rng)
+    episode = 1
+    sequences = [MSC]
+    pairs = []
+    for S1, S2 in pairings:
+        oddball1, T = inputs.create_oddball(
+            Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
+        oddball2, T = inputs.create_oddball(
+            Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
+        sequences.extend([oddball1, oddball2])
+        pairs.append({
+            'S1': S1, 'S2': S2,
+            'msc': {S1: 0, S2: 0},
+            'std': {S1: episode, S2: episode+1},
+            'dev': {S1: episode+1, S2: episode}})
+        episode += 2
+    return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
 
 
 def compress_results(all_results, discard_source=True):
