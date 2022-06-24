@@ -3,9 +3,9 @@ from brian2.only import *
 import spatial
 
 
-def create_excitatory(Net, X, Y, params, clock, extras):
+def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables=[]):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
-    excitatory_eqn = '''
+    eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
@@ -14,23 +14,32 @@ def create_excitatory(Net, X, Y, params, clock, extras):
         x : meter
         y : meter
     '''
-    excitatory_threshold = 'v > v_threshold + th_adapt'
-    excitatory_reset = '''
-        v = v_reset
-        th_adapt += th_ampl
-    '''
+    threshold = 'v > v_threshold + th_adapt'
+    resets = {
+        'v': '= v_reset',
+        'th_adapt': '+= th_ampl'
+    }
     if extras:
-        excitatory_eqn += '''
+        eqn += '''
         dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec : 1
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
         du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
         '''
-        excitatory_reset += '''
-        synaptic_xr -= U*synaptic_xr
-        u = v_reset
+        resets['synaptic_xr'] = '-= U*synaptic_xr'
+        resets['u'] = '= v_reset'
+    for var in delayed_variables:
+        if f'd{var}/dt = ' not in eqn:
+            continue
+        unit = 'volt' if var in ('v', 'u', 'th_adapt') else '1'
+        eqn += f'''
+        d{var}_delayed/dt = ({var}-{var}_delayed)/dt : {unit}
         '''
+        if var in resets:
+            resets = {f'{var}_delayed': f'= {var}', **resets}
+        
 
-    Exc = NeuronGroup(params['N_exc'], excitatory_eqn, threshold=excitatory_threshold, reset=excitatory_reset, refractory=params['refractory_exc'],
+    reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
+    Exc = NeuronGroup(params['N_exc'], eqn, threshold=threshold, reset=reset, refractory=params['refractory_exc'],
                     method='euler', namespace=params, name='Exc', clock=clock)
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
     Exc.add_attribute('dynamic_variables')
@@ -40,6 +49,9 @@ def create_excitatory(Net, X, Y, params, clock, extras):
     if extras:
         Exc.dynamic_variables.extend(('synaptic_xr', 'g_exc_nox', 'u'))
         Exc.dynamic_variable_initial.extend((1, 0, params['voltage_init']))
+    for var in delayed_variables:
+        Exc.dynamic_variables.append(f'{var}_delayed')
+        Exc.dynamic_variable_initial.append(Exc.dynamic_variable_initial[Exc.dynamic_variables.index(var)])
     
     for var, value in zip(Exc.dynamic_variables, Exc.dynamic_variable_initial):
         setattr(Exc, var, value)
@@ -48,9 +60,9 @@ def create_excitatory(Net, X, Y, params, clock, extras):
     return Exc
 
 
-def create_inhibitory(Net, X, Y, params, clock, extras):
+def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables=[]):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
-    inhibitory_eqn = '''
+    eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
@@ -58,18 +70,27 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
         x : meter
         y : meter
     '''
-    inhibitory_threshold = 'v > v_threshold'
-    inhibitory_reset = 'v = v_reset'
+    threshold = 'v > v_threshold'
+    resets = {'v': '= v_reset'}
     if extras:
-        inhibitory_eqn += '''
+        eqn += '''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
         du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
         '''
-        inhibitory_reset += '''
-        u = v_reset
+        resets['u'] = '= v_reset'
+    for var in delayed_variables:
+        if f'd{var}/dt = ' not in eqn:
+            continue
+        unit = 'volt' if var in ('v', 'u') else '1'
+        eqn += f'''
+        d{var}_delayed/dt = ({var}-{var}_delayed)/dt : {unit}
         '''
+        if var in resets:
+            resets = {f'{var}_delayed': f'= {var}', **resets}
+    
 
-    Inh = NeuronGroup(params['N_inh'], inhibitory_eqn, threshold=inhibitory_threshold, reset=inhibitory_reset, refractory=params['refractory_inh'],
+    reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
+    Inh = NeuronGroup(params['N_inh'], eqn, threshold=threshold, reset=reset, refractory=params['refractory_inh'],
                     method='euler', namespace=params, name='Inh', clock=clock)
     Inh.x, Inh.y = X[params['N_exc']:], Y[params['N_exc']:]
     Inh.add_attribute('dynamic_variables')
@@ -79,6 +100,9 @@ def create_inhibitory(Net, X, Y, params, clock, extras):
     if extras:
         Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
         Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
+    for var in delayed_variables:
+        Inh.dynamic_variables.append(f'{var}_delayed')
+        Inh.dynamic_variable_initial.append(Inh.dynamic_variable_initial[Inh.dynamic_variables.index(var)])
     
     for var, value in zip(Inh.dynamic_variables, Inh.dynamic_variable_initial):
         setattr(Inh, var, value)
@@ -200,12 +224,13 @@ def create_network_reset(Net, dt):
     return resets
 
 
-def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None, state_dt=None, state_vars=None, when='before_resets', extras=False):
+def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
+                   state_dt=None, state_vars=None, when='before_resets', extras=False, delayed_variables=[]):
     Net = Network()
     defaultclock.dt = params['dt']
     clock = defaultclock
-    Exc = create_excitatory(Net, X, Y, params, clock, extras)
-    Inh = create_inhibitory(Net, X, Y, params, clock, extras)
+    Exc = create_excitatory(Net, X, Y, params, clock, extras, delayed_variables)
+    Inh = create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables)
     Syn_EE, Syn_EI = create_excitatory_synapses(Net, params, clock, Exc, Inh, W, D, extras)
     Syn_IE, Syn_II = create_inhibitory_synapses(Net, params, clock, Exc, Inh, W, D, extras)
     Input, Input_Exc, Input_Inh = create_input(Net, X, Y, Xstim, Ystim, params, clock, Exc, Inh)
