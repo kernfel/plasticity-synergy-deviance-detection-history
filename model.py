@@ -56,6 +56,8 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, enfor
         Exc.dynamic_variables.extend(('synaptic_xr', 'g_exc_nox', 'u'))
         Exc.dynamic_variable_initial.extend((1, 0, params['voltage_init']))
     for var in delayed_variables:
+        if f'd{var}/dt = ' not in eqn:
+            continue
         Exc.dynamic_variables.append(f'{var}_delayed')
         Exc.dynamic_variable_initial.append(Exc.dynamic_variable_initial[Exc.dynamic_variables.index(var)])
     if enforced_spikes:
@@ -116,6 +118,8 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, enfor
         Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
         Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
     for var in delayed_variables:
+        if f'd{var}/dt = ' not in eqn:
+            continue
         Inh.dynamic_variables.append(f'{var}_delayed')
         Inh.dynamic_variable_initial.append(Inh.dynamic_variable_initial[Inh.dynamic_variables.index(var)])
     if enforced_spikes:
