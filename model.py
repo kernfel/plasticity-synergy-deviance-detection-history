@@ -5,28 +5,24 @@ import spatial
 
 def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
-    eqn = '''
-        dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
+    dvdt = '((v_rest-V) + (E_exc-V)*g_exc + (E_exc-V)*g_input + (E_inh-V)*g_inh) / tau_mem'
+    eqn = f'''
+        dv/dt = {dvdt.replace('V','v')}*int(not_refractory) + (v_reset-v)/dt*(1-int(not_refractory)) : volt
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
         dg_input/dt = -g_input/tau_ampa : 1
-        dth_adapt/dt = -th_adapt/th_tau : volt
+        dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
         x : meter
         y : meter
     '''
     threshold = 'v > v_threshold + th_adapt'
-    resets = {
-        'v': '= v_reset',
-        'th_adapt': '+= th_ampl'
-    }
+    resets = {}
     if extras:
-        eqn += '''
-        dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec : 1
+        eqn += f'''
+        dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
+        du/dt = {dvdt.replace('V','u')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
         '''
-        resets['synaptic_xr'] = '-= U*synaptic_xr'
-        resets['u'] = '= v_reset'
     if enforced_spikes:
         eqn += '''
         spike_enforcer : 1
@@ -59,8 +55,9 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
 
 def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
-    eqn = '''
-        dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
+    dvdt = '((v_rest-V) + (E_exc-V)*g_exc + (E_exc-V)*g_input + (E_inh-V)*g_inh) / tau_mem'
+    eqn = f'''
+        dv/dt = {dvdt.replace('V','v')}*int(not_refractory) + (v_reset-v)/dt*(1-int(not_refractory)) : volt
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
         dg_input/dt = -g_input/tau_ampa : 1
@@ -68,13 +65,12 @@ def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         y : meter
     '''
     threshold = 'v > v_threshold'
-    resets = {'v': '= v_reset'}
+    resets = {}
     if extras:
-        eqn += '''
+        eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
+        du/dt = {dvdt.replace('V','u')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
         '''
-        resets['u'] = '= v_reset'
     if enforced_spikes:
         eqn += '''
         spike_enforcer : 1
@@ -231,7 +227,7 @@ def create_network_reset(Net, dt):
 
 
 def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
-                   state_dt=None, state_vars=None, when='before_resets',
+                   state_dt=None, state_vars=None, when='end',
                    extras=False,
                    surrogate={}, suffix=''):
     Net = Network()
