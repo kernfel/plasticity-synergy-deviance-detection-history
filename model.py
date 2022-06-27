@@ -3,7 +3,7 @@ from brian2.only import *
 import spatial
 
 
-def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, enforced_spikes, suffix):
+def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -27,15 +27,6 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, enfor
         '''
         resets['synaptic_xr'] = '-= U*synaptic_xr'
         resets['u'] = '= v_reset'
-    for var in delayed_variables:
-        if f'd{var}/dt = ' not in eqn:
-            continue
-        unit = 'volt' if var in ('v', 'u', 'th_adapt') else '1'
-        eqn += f'''
-        d{var}_delayed/dt = ({var}-{var}_delayed)/dt : {unit}
-        '''
-        if var in resets:
-            resets = {f'{var}_delayed': f'= {var}', **resets}
     if enforced_spikes:
         eqn += '''
         spike_enforcer : 1
@@ -55,11 +46,6 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, enfor
     if extras:
         Exc.dynamic_variables.extend(('synaptic_xr', 'g_exc_nox', 'u'))
         Exc.dynamic_variable_initial.extend((1, 0, params['voltage_init']))
-    for var in delayed_variables:
-        if f'd{var}/dt = ' not in eqn:
-            continue
-        Exc.dynamic_variables.append(f'{var}_delayed')
-        Exc.dynamic_variable_initial.append(Exc.dynamic_variable_initial[Exc.dynamic_variables.index(var)])
     if enforced_spikes:
         Exc.dynamic_variables.append('spike_enforcer')
         Exc.dynamic_variable_initial.append(0)
@@ -71,7 +57,7 @@ def create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, enfor
     return Exc
 
 
-def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, enforced_spikes, suffix):
+def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     eqn = '''
         dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem : volt (unless refractory)
@@ -89,15 +75,6 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, enfor
         du/dt = ((v_rest-u) + (E_exc-u)*g_exc_nox + (E_exc-v)*g_input + (E_inh-u)*g_inh) / tau_mem : volt (unless refractory)
         '''
         resets['u'] = '= v_reset'
-    for var in delayed_variables:
-        if f'd{var}/dt = ' not in eqn:
-            continue
-        unit = 'volt' if var in ('v', 'u') else '1'
-        eqn += f'''
-        d{var}_delayed/dt = ({var}-{var}_delayed)/dt : {unit}
-        '''
-        if var in resets:
-            resets = {f'{var}_delayed': f'= {var}', **resets}
     if enforced_spikes:
         eqn += '''
         spike_enforcer : 1
@@ -117,11 +94,6 @@ def create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, enfor
     if extras:
         Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
         Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
-    for var in delayed_variables:
-        if f'd{var}/dt = ' not in eqn:
-            continue
-        Inh.dynamic_variables.append(f'{var}_delayed')
-        Inh.dynamic_variable_initial.append(Inh.dynamic_variable_initial[Inh.dynamic_variables.index(var)])
     if enforced_spikes:
         Inh.dynamic_variables.append('spike_enforcer')
         Inh.dynamic_variable_initial.append(0)
@@ -260,13 +232,13 @@ def create_network_reset(Net, dt):
 
 def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
                    state_dt=None, state_vars=None, when='before_resets',
-                   extras=False, delayed_variables=[],
+                   extras=False,
                    surrogate={}, suffix=''):
     Net = Network()
     defaultclock.dt = params['dt']
     clock = defaultclock
-    Exc = create_excitatory(Net, X, Y, params, clock, extras, delayed_variables, bool(surrogate), suffix)
-    Inh = create_inhibitory(Net, X, Y, params, clock, extras, delayed_variables, bool(surrogate), suffix)
+    Exc = create_excitatory(Net, X, Y, params, clock, extras, bool(surrogate), suffix)
+    Inh = create_inhibitory(Net, X, Y, params, clock, extras, bool(surrogate), suffix)
     if surrogate:
         assert params['settling_period'] >= params['dt'], 'Surrogacy requires a settling period of at least 1 dt.'
         presyn_Exc, enforcer_Exc = create_surrogate(Net, Exc, surrogate['Exc'], clock, suffix)

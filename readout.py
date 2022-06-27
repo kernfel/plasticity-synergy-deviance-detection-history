@@ -65,10 +65,9 @@ def get_raw_results(Net, params, episode=0):
         for varname, init in zip(Net['Exc'+Net.suffix].dynamic_variables, Net['Exc'+Net.suffix].dynamic_variable_initial):
             if not hasattr(Net['StateMon_Exc'+Net.suffix], varname):
                 continue
-            tpulse_all_ = tpulse_all + (1 if varname.endswith('_delayed') else 0)
-            var_exc = getattr(Net['StateMon_Exc'+Net.suffix], varname)[:, tpulse_all_]
+            var_exc = getattr(Net['StateMon_Exc'+Net.suffix], varname)[:, tpulse_all]
             try:
-                var_inh = getattr(Net['StateMon_Inh'+Net.suffix], varname)[:, tpulse_all_]
+                var_inh = getattr(Net['StateMon_Inh'+Net.suffix], varname)[:, tpulse_all]
             except AttributeError:
                 if type(init) == str:
                     var_inh = ones_inhibitory * eval(init, globals(), params)
@@ -125,7 +124,7 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
-def get_results(Net, params, rundata, replace_delayed=True):
+def get_results(Net, params, rundata):
     raw_results = {}
     outputs = []
     dynamic_variables_out = []
@@ -140,11 +139,7 @@ def get_results(Net, params, rundata, replace_delayed=True):
                     raw_results[episode] = get_raw_results(Net, params, episode)
                     dynamic_variables = raw_results[episode].get('dynamic_variables', [])
                     if len(dynamic_variables_out) != len(dynamic_variables):  # only once
-                        if replace_delayed:
-                            dynamic_variables_out = [v[:-len('_delayed')] if v.endswith('_delayed') else v
-                                                     for v in dynamic_variables]
-                        else:
-                            dynamic_variables_out = dynamic_variables
+                        dynamic_variables_out = dynamic_variables
 
                 raw = raw_results[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
@@ -187,7 +182,6 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
             'std': {S1: episode, S2: episode+1},
             'dev': {S1: episode+1, S2: episode}})
         episode += 2
-    T += params['dt']
     return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
 
 
@@ -198,7 +192,6 @@ def repeat_run(Net, params, template):
     T = 0*second
     for seq in template['sequences']:
         T = inputs.set_input_sequence(Net, seq, params, T)
-    T += params['dt']
     return {**{k: template[k] for k in ('sequences', 'pairs', 'stimuli')}, 'runtime': T}
 
 
