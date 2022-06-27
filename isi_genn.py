@@ -127,13 +127,10 @@ for net in range(N_networks):
                     device.activate(**device_args)
                     
                     mod_params = {**params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
-                    delayed_vars = ['v', 'th_adapt'] if TA else ['v']
-                    state_vars = [f'{v}_delayed' for v in delayed_vars]
                     Net = model.create_network(
                         X, Y, Xstim, Ystim, W, D, mod_params,
                         reset_dt=inputs.get_episode_duration(mod_params),
-                        delayed_variables=delayed_vars,
-                        state_dt=params['dt'], state_vars=state_vars, when='end')
+                        state_dt=params['dt'], state_vars=['v', 'th_adapt'])
                     
                     rundata = readout.repeat_run(Net, mod_params, template)
                     rundata['params'] = mod_params
@@ -150,8 +147,7 @@ for net in range(N_networks):
                         Net = model.create_network(
                             X, Y, Xstim, Ystim, W, D, mod_params_U,
                             reset_dt=inputs.get_episode_duration(mod_params_U),
-                            delayed_variables=['v'],
-                            state_dt=params['dt'], state_vars=['v_delayed'], when='end',
+                            state_dt=params['dt'], state_vars=['v'],
                             surrogate=surrogate, suffix='_surrogate')
                         
                         rundata_U = readout.repeat_run(Net, mod_params_U, template)
@@ -179,4 +175,4 @@ for net in range(N_networks):
                     except Exception as e:
                         print(e)
 
-            print(f'Completed GPU ISI sweep {(net+1)*(STD+1)*(TA+1)*(templ+1)}/{N_networks*4*N_templates} after {(time.time()-Tstart)/60:.1f} minutes.')
+            print(f'Completed GPU ISI sweep (net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
