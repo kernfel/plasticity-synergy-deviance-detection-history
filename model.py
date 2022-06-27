@@ -21,7 +21,7 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         eqn += f'''
         dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        du/dt = {dvdt.replace('V','u')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
+        du/dt = {dvdt.replace('V','u').replace('g_exc', 'g_exc_nox')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
         '''
     if enforced_spikes:
         eqn += '''
