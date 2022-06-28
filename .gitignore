@@ -5,4 +5,6 @@ output/
 tmp/
 .ipynb_checkpoints/
 GeNNworkspace/
+GPU0/
+GPU1/
 data/
