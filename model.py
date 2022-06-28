@@ -210,7 +210,7 @@ def create_statemonitors(Net, dt, variables, when, suffix):
             varnames = [var for var in obj.dynamic_variables if variables is None or var in variables]
             if len(varnames):
                 monitor = StateMonitor(
-                    obj, varnames, name=f'StateMon_{obj.name}'+suffix, clock=clock,
+                    obj, varnames, name=f'StateMon_{obj.name}', clock=clock,
                     record=range(obj.num_synapses) if hasattr(obj, 'num_synapses') else True,
                     when=when)
                 monitors.append(monitor)
