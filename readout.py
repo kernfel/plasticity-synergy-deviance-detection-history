@@ -47,7 +47,7 @@ def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
     return I, T, xr
 
 
-def get_raw_results(Net, params, episode=0):
+def get_raw_spikes(Net, params, episode):
     raw = {}
     npulses = params['sequence_length']*params['sequence_count']
     spike_i, spike_t, _ = get_episode_spikes(Net, params, episode=episode)
@@ -55,9 +55,15 @@ def get_raw_results(Net, params, episode=0):
     raw['pulsed_nspikes'] = np.zeros((len(raw['pulsed_i']), params['N']), int)
     for j, i in enumerate(raw['pulsed_i']):
         np.add.at(raw['pulsed_nspikes'][j], i, 1)
+    return raw
+
+
+def get_raw_dynamics(Net, params, episode, tmax):
+    raw = {}
+    npulses = params['sequence_length']*params['sequence_count']
     if 'StateMon_Exc'+Net.suffix in Net:
         tpulse = np.arange(npulses)*params['ISI'] + episode*npulses*params['ISI'] + (episode+1)*params['settling_period']
-        t_in_pulse = np.arange(stop=params['ISI'], step=params['dt'])
+        t_in_pulse = np.arange(stop=tmax, step=params['dt'])
         tpulse_all = ((t_in_pulse[None, :] + tpulse[:, None]) / params['dt'] + .5).astype(int)
         ones_inhibitory = np.ones((params['N_inh'],) + tpulse_all.shape)
 
@@ -124,10 +130,11 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
-def get_results(Net, params, rundata):
-    raw_results = {}
+def get_results(Net, params, rundata, compress=False):
+    raw_spikes, raw_dynamics = {}, {}
     outputs = []
     dynamic_variables_out = []
+    itmax = 0
     for pair in rundata['pairs']:
         out = {}
         outputs.append(out)
@@ -135,13 +142,10 @@ def get_results(Net, params, rundata):
             out[S] = {}
             for key in ('std', 'dev', 'msc'):
                 episode = pair[key][S]
-                if episode not in raw_results:
-                    raw_results[episode] = get_raw_results(Net, params, episode)
-                    dynamic_variables = raw_results[episode].get('dynamic_variables', [])
-                    if len(dynamic_variables_out) != len(dynamic_variables):  # only once
-                        dynamic_variables_out = dynamic_variables
+                if episode not in raw_spikes:
+                    raw_spikes[episode] = get_raw_spikes(Net, params, episode)
 
-                raw = raw_results[episode]
+                raw = raw_spikes[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 results = out[S][key] = {}
                 
@@ -149,9 +153,34 @@ def get_results(Net, params, rundata):
                 results['pulsed_i'] = [i for i, j in zip(raw['pulsed_i'], pulse_mask) if j]
                 results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
                 results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
+
+                itmax = max(itmax, np.max(np.nonzero(results['spike_hist'])[1]) + 1)
+    del raw_spikes
+    
+    if compress:
+        tmax = itmax*params['dt']
+    else:
+        tmax = params['ISI']
+
+    for out, pair in zip(outputs, rundata['pairs']):
+        for S in (pair['S1'], pair['S2']):
+            for key in ('std', 'dev', 'msc'):
+                episode = pair[key][S]
+                if episode not in raw_dynamics:
+                    raw_dynamics[episode] = get_raw_dynamics(Net, params, episode, tmax)
+                    dynamic_variables = raw_dynamics[episode].get('dynamic_variables', [])
+                    if len(dynamic_variables_out) != len(dynamic_variables):  # only once
+                        dynamic_variables_out = dynamic_variables
+
+                raw = raw_dynamics[episode]
+                pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
+                results = out[S][key]
                 
                 for key, okey in zip(dynamic_variables, dynamic_variables_out):
                     results[okey] = raw[key][:, pulse_mask]
+                
+                if compress:
+                    results['spike_hist'] = results['spike_hist'][:, :itmax]
     rundata['results'] = outputs
     rundata['dynamic_variables'] = dynamic_variables_out
     return outputs
