@@ -11,12 +11,18 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
         dg_input/dt = -g_input/tau_ampa : 1
-        dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
         x : meter
         y : meter
     '''
-    threshold = 'v > v_threshold + th_adapt'
+    threshold = 'v > v_threshold'
     resets = {}
+    if params['th_ampl'] != 0*mV and params['th_tau'] > 0*ms:
+        extras = extras + ('th_adapt',)
+    if 'th_adapt' in extras:
+        eqn += '''
+        dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
+        '''
+        threshold = 'v > v_threshold + th_adapt'
     if 'xr' in extras:
         eqn += '''
         dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
@@ -40,8 +46,11 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
     Exc.add_attribute('dynamic_variables')
     Exc.add_attribute('dynamic_variable_initial')
-    Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh', 'g_input']
-    Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0, 0]
+    Exc.dynamic_variables = ['v', 'g_exc', 'g_inh', 'g_input']
+    Exc.dynamic_variable_initial = [params['voltage_init'], 0, 0, 0]
+    if 'th_adapt' in extras:
+        Exc.dynamic_variables.append('th_adapt')
+        Exc.dynamic_variable_initial.append('0 * volt')
     if 'xr' in extras:
         Exc.dynamic_variables.append('synaptic_xr')
         Exc.dynamic_variable_initial.append(1)
