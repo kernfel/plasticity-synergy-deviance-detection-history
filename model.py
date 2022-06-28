@@ -17,9 +17,12 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     '''
     threshold = 'v > v_threshold + th_adapt'
     resets = {}
-    if extras:
-        eqn += f'''
+    if 'xr' in extras:
+        eqn += '''
         dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
+        '''
+    if 'u' in extras:
+        eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
         du/dt = {dvdt.replace('V','u').replace('g_exc', 'g_exc_nox')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
         '''
@@ -39,9 +42,12 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     Exc.add_attribute('dynamic_variable_initial')
     Exc.dynamic_variables = ['v', 'th_adapt', 'g_exc', 'g_inh', 'g_input']
     Exc.dynamic_variable_initial = [params['voltage_init'], '0 * volt', 0, 0, 0]
-    if extras:
-        Exc.dynamic_variables.extend(('synaptic_xr', 'g_exc_nox', 'u'))
-        Exc.dynamic_variable_initial.extend((1, 0, params['voltage_init']))
+    if 'xr' in extras:
+        Exc.dynamic_variables.append('synaptic_xr')
+        Exc.dynamic_variable_initial.append(1)
+    if 'u' in extras:
+        Exc.dynamic_variables.extend(('g_exc_nox', 'u'))
+        Exc.dynamic_variable_initial.extend((0, params['voltage_init']))
     if enforced_spikes:
         Exc.dynamic_variables.append('spike_enforcer')
         Exc.dynamic_variable_initial.append(0)
@@ -66,7 +72,7 @@ def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     '''
     threshold = 'v > v_threshold'
     resets = {}
-    if extras:
+    if 'u' in extras:
         eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
         du/dt = {dvdt.replace('V','u')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
@@ -87,7 +93,7 @@ def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     Inh.add_attribute('dynamic_variable_initial')
     Inh.dynamic_variables = ['v', 'g_exc', 'g_inh', 'g_input']
     Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0, 0]
-    if extras:
+    if 'u' in extras:
         Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
         Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
     if enforced_spikes:
@@ -118,7 +124,7 @@ def create_excitatory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extra
         g_exc_post += U*xr*w
         xr -= U*xr
     '''
-    if extras:
+    if 'u' in extras:
         excitatory_on_pre += '''
         g_exc_nox_post += U*w
         '''
@@ -228,7 +234,7 @@ def create_network_reset(Net, dt):
 
 def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
                    state_dt=None, state_vars=None, when='end',
-                   extras=False,
+                   extras=(),
                    surrogate={}, suffix=''):
     Net = Network()
     defaultclock.dt = params['dt']
