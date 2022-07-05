@@ -130,7 +130,7 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
-def get_results(Net, params, rundata, compress=False):
+def get_results(Net, params, rundata, compress=False, tmax=None):
     raw_spikes, raw_dynamics = {}, {}
     outputs = []
     dynamic_variables_out = []
@@ -157,7 +157,10 @@ def get_results(Net, params, rundata, compress=False):
                 itmax = max(itmax, np.max(np.nonzero(results['spike_hist'])[1]) + 1)
     del raw_spikes
     
-    if compress:
+    if tmax is not None:
+        itmax = int(tmax/params['dt'] + 0.5)
+        compress = True
+    elif compress:
         tmax = itmax*params['dt']
     else:
         tmax = params['ISI']
