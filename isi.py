@@ -89,10 +89,11 @@ params = {
 }
 
 
-N_networks = 50
-N_templates = 5
-ISIs = (100, 200, 300, 500, 1000, 2000)
-fbase = '/data/felix/culture/isi0_'
+N_networks = 1
+N_templates = 1
+ISIs = (100, 300, 500, 750, 1000)
+# fbase = '/data/felix/culture/isi0_'
+fbase = 'data/isi1_'
 fname = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}.h5'
 figfile = fbase + 'indices.png'
 idxfile = fbase + 'idx.h5'
@@ -109,18 +110,26 @@ Net = model.create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=inputs.get
 templates = [readout.setup_run(Net, params, rng, stimuli, pairings) for _ in range(N_templates)]
 
 ddi, ai = np.empty((2, N_networks, 2, 2, len(ISIs), N_templates, len(pairings), 2))
+nspikes = {key: np.empty((N_networks, 2, 2, len(ISIs), N_templates, len(pairings), 2)) for key in ('std', 'dev', 'msc')}
 
-for net in range(N_networks):
-    X, Y, W, D = spatial.create_weights(params, rng)
-    try:
-        dd.io.save(netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
-    except Exception as e:
-        print(e)
-    for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
-        for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
-            Tstart = time.time()
-            for iISI, isi in enumerate(ISIs):
-                for templ, template in enumerate(templates):
+for templ, template in enumerate(templates):
+    for net in range(N_networks):
+        if templ == 0:
+            # X, Y, W, D = spatial.create_weights(params, rng)
+            f = np.load('presynaptic_events_singular.npz')
+            W, X, Y, D = [f[k] for k in 'WXYD']
+            X, Y = X*meter, Y*meter
+            try:
+                dd.io.save(netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
+            except Exception as e:
+                print(e)
+        else:
+            res = dd.io.load(netfile.format(net=net))
+            X, Y, W, D = res['X'], res['Y'], res['W'], res['D']
+        for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
+            for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
+                Tstart = time.time()
+                for iISI, isi in enumerate(ISIs):
                     device.reinit()
                     device.activate()
                     
@@ -128,14 +137,21 @@ for net in range(N_networks):
                     Net = model.create_network(
                         X, Y, Xstim, Ystim, W, D, mod_params,
                         reset_dt=inputs.get_episode_duration(mod_params),
-                        state_dt=params['dt'], state_vars=['v', 'th_adapt', 'u'],
-                        extras=True)
+                        state_dt=params['dt'],
+                        state_vars=['v'] + [k for k,v in (('th_adapt', TA), ('u', STD)) if v],
+                        extras=('u',) if STD else ())
                     
                     rundata = readout.repeat_run(Net, mod_params, template)
                     rundata['params'] = mod_params
                     Net.run(rundata['runtime'])
-                    readout.get_results(Net, mod_params, rundata)
-                    readout.compress_results(rundata)
+                    readout.get_results(Net, mod_params, rundata, tmax=ISIs[0]*ms)
+                    for r in rundata['results']:
+                        for rs in r.values():
+                            for rt in rs.values():
+                                if not STD:
+                                    rt['u'] = rt['v']
+                                if not TA:
+                                    rt['th_adapt'] = zeros_like(rt['v'])*volt
                     try:
                         dd.io.save(fname.format(**locals()), rundata)
                     except Exception as e:
@@ -144,11 +160,14 @@ for net in range(N_networks):
                     for ipair, pairdata in enumerate(rundata['results']):
                         for istim, stimdata in enumerate(pairdata.values()):
                             std, dev, msc = [stimdata[key]['nspikes'].sum() for key in ('std', 'dev', 'msc')]
+                            nspikes['std'][net, STD, TA, iISI, templ, ipair, istim] = std
+                            nspikes['dev'][net, STD, TA, iISI, templ, ipair, istim] = dev
+                            nspikes['msc'][net, STD, TA, iISI, templ, ipair, istim] = msc
                             ddi[net, STD, TA, iISI, templ, ipair, istim] = (dev-msc)/(dev+msc)
                             ai[net, STD, TA, iISI, templ, ipair, istim] = (msc-std)/(msc+std)
                     try:
-                        dd.io.save(idxfile, dict(ddi=ddi, ai=ai, net=net, STD=STD, TA=TA, iISI=iISI, templ=templ))
+                        dd.io.save(idxfile, dict(ddi=ddi, ai=ai, nspikes=nspikes, net=net, STD=STD, TA=TA, iISI=iISI, templ=templ))
                     except Exception as e:
                         print(e)
 
-            print(f'Completed CPU ISI sweep (net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
+                print(f'Completed CPU ISI sweep (net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
