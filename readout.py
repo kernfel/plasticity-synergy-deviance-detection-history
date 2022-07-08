@@ -86,10 +86,10 @@ def get_raw_dynamics(Net, params, episode, tmax):
     return raw
 
 
-def get_infused_histogram(params, typed_results, infusion, norm=False, default=0, **kwargs):
+def get_infused_histogram(params, spike_results, infusion, norm=False, default=0, **kwargs):
     '''
     Computes the pulse-triggered spike histogram of each neuron as a (N, t) ndarray,
-    but instead of adding 1 for each spike, it adds `infusion(typed_results, pulse, indices, ticks, **kwargs)`,
+    but instead of adding 1 for each spike, it adds `infusion(spike_results, pulse, indices, ticks, **kwargs)`,
     where `indices` and `ticks` are the firing neurons and corresponding time points
     in the given `pulse`.
     Note that this operates on **typed results**, and pulse indices thus enumerate the pulses
@@ -99,14 +99,14 @@ def get_infused_histogram(params, typed_results, infusion, norm=False, default=0
     '''
     hist = np.zeros((params['N'], int(params['ISI']/params['dt'] +.5)))
     hist_1 = np.zeros_like(hist)
-    for pulse, (i, t) in enumerate(zip(typed_results['pulsed_i'], typed_results['pulsed_t'])):
+    for pulse, (i, t) in enumerate(zip(spike_results['pulsed_i'], spike_results['pulsed_t'])):
         t = (t/params['dt'] +.5).astype(int)
-        hist[i, t] += infusion(typed_results, pulse, i, t, **kwargs)
+        hist[i, t] += infusion(spike_results, pulse, i, t, **kwargs)
         hist_1[i, t] += 1
     if norm:
         np.divide(hist, hist_1, where=hist_1>0, out=hist)
     else:
-        hist /= len(typed_results['pulsed_i'])
+        hist /= len(spike_results['pulsed_i'])
     hist[hist_1==0] = default
     return hist
 
@@ -132,13 +132,13 @@ def quantify_presynaptic(W, params, hist, xr):
 
 def get_results(Net, params, rundata, compress=False, tmax=None):
     raw_spikes, raw_dynamics = {}, {}
-    outputs = []
+    spike_output, dynamics_output = [], []
     dynamic_variables_out = []
     itmax = 0
     rundata['msc_spikes'] = {}
     for pair in rundata['pairs']:
         out = {}
-        outputs.append(out)
+        spike_output.append(out)
         for S in (pair['S1'], pair['S2']):
             out[S] = {}
             for key in ('std', 'dev', 'msc'):
@@ -166,9 +166,18 @@ def get_results(Net, params, rundata, compress=False, tmax=None):
         tmax = itmax*params['dt']
     else:
         tmax = params['ISI']
+    
+    if compress:
+        for out in spike_output:
+            for S in out.keys():
+                for key in out[S].keys():
+                    out[S][key]['spike_hist'] = out[S][key]['spike_hist'][:, :itmax]
 
-    for out, pair in zip(outputs, rundata['pairs']):
+    for pair in rundata['pairs']:
+        out = {}
+        dynamics_output.append(out)
         for S in (pair['S1'], pair['S2']):
+            out[S] = {}
             for key in ('std', 'dev', 'msc'):
                 episode = pair[key][S]
                 if episode not in raw_dynamics:
@@ -179,16 +188,14 @@ def get_results(Net, params, rundata, compress=False, tmax=None):
 
                 raw = raw_dynamics[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
-                results = out[S][key]
+                results = out[S][key] = {}
                 
                 for key, okey in zip(dynamic_variables, dynamic_variables_out):
                     results[okey] = raw[key][:, pulse_mask]
-                
-                if compress:
-                    results['spike_hist'] = results['spike_hist'][:, :itmax]
-    rundata['results'] = outputs
+    rundata['spikes'] = spike_output
+    rundata['dynamics'] = dynamics_output
     rundata['dynamic_variables'] = dynamic_variables_out
-    return outputs
+    return spike_output, dynamics_output
 
 
 def setup_run(Net, params, rng, stimuli, pairings=None):

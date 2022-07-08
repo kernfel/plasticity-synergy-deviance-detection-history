@@ -145,7 +145,7 @@ for templ, template in enumerate(templates):
                     rundata['params'] = mod_params
                     Net.run(rundata['runtime'])
                     readout.get_results(Net, mod_params, rundata, tmax=ISIs[0]*ms)
-                    for r in rundata['results']:
+                    for r in rundata['dynamics']:
                         for rs in r.values():
                             for rt in rs.values():
                                 if not STD:
