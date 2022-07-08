@@ -135,6 +135,7 @@ def get_results(Net, params, rundata, compress=False, tmax=None):
     outputs = []
     dynamic_variables_out = []
     itmax = 0
+    rundata['msc_spikes'] = {}
     for pair in rundata['pairs']:
         out = {}
         outputs.append(out)
@@ -144,18 +145,19 @@ def get_results(Net, params, rundata, compress=False, tmax=None):
                 episode = pair[key][S]
                 if episode not in raw_spikes:
                     raw_spikes[episode] = get_raw_spikes(Net, params, episode)
+                    if key == 'msc':
+                        rundata['msc_spikes'][episode] = raw_spikes[episode]
 
                 raw = raw_spikes[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 results = out[S][key] = {}
                 
-                results['nspikes'] = raw['pulsed_nspikes'][pulse_mask].mean(0)
+                results['nspikes'] = raw['pulsed_nspikes'][pulse_mask]
                 results['pulsed_i'] = [i for i, j in zip(raw['pulsed_i'], pulse_mask) if j]
                 results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
                 results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
 
                 itmax = max(itmax, np.max(np.nonzero(results['spike_hist'])[1]) + 1)
-    del raw_spikes
     
     if tmax is not None:
         itmax = int(tmax/params['dt'] + 0.5)
