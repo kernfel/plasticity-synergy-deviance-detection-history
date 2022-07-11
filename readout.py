@@ -130,10 +130,9 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
-def get_results(Net, params, rundata, compress=False, tmax=None):
-    raw_spikes, raw_dynamics = {}, {}
-    spike_output, dynamics_output = [], []
-    dynamic_variables_out = []
+def get_spike_results(Net, params, rundata, compress=False, tmax=None):
+    raw_spikes = {}
+    spike_output = []
     itmax = 0
     rundata['msc_spikes'] = {}
     for pair in rundata['pairs']:
@@ -172,6 +171,29 @@ def get_results(Net, params, rundata, compress=False, tmax=None):
             for S in out.keys():
                 for key in out[S].keys():
                     out[S][key]['spike_hist'] = out[S][key]['spike_hist'][:, :itmax]
+    
+    rundata['spikes'] = spike_output
+    return spike_output
+
+
+def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
+    raw_dynamics = {}
+    dynamics_output = []
+    dynamic_variables_out = []
+    
+    if tmax is not None:
+        compress = True
+    elif compress:
+        try:
+            for out in rundata['spikes']:
+                for S in out.keys():
+                    for key in out[S].keys():
+                        itmax = out[S][key]['spike_hist'].shape(1)
+                        raise StopIteration
+        except StopIteration:
+            tmax = itmax*params['dt']
+    else:
+        tmax = params['ISI']
 
     for pair in rundata['pairs']:
         out = {}
@@ -192,9 +214,14 @@ def get_results(Net, params, rundata, compress=False, tmax=None):
                 
                 for key, okey in zip(dynamic_variables, dynamic_variables_out):
                     results[okey] = raw[key][:, pulse_mask]
-    rundata['spikes'] = spike_output
     rundata['dynamics'] = dynamics_output
     rundata['dynamic_variables'] = dynamic_variables_out
+    return dynamics_output
+
+
+def get_results(Net, params, rundata, compress=False, tmax=None):
+    spike_output = get_spike_results(Net, params, rundata, compress=compress, tmax=tmax)
+    dynamics_output = get_dynamics_results(Net, params, rundata, compress=compress, tmax=tmax)
     return spike_output, dynamics_output
 
 
