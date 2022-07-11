@@ -124,7 +124,7 @@ for templ, template in enumerate(templates):
                 print(e)
         else:
             res = dd.io.load(netfile.format(net=net))
-            X, Y, W, D = res['X'], res['Y'], res['W'], res['D']
+            X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
         for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
             for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
                 Tstart = time.time()
