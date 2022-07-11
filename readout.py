@@ -1,4 +1,5 @@
 from distutils.log import warn
+from itertools import count
 from brian2.only import *
 
 import numpy_ as np
@@ -58,22 +59,23 @@ def get_raw_spikes(Net, params, episode):
     return raw
 
 
-def get_raw_dynamics(Net, params, episode, tmax):
+def get_raw_dynamics(Net, params, episodes, tmax):
     raw = {}
     npulses = params['sequence_length']*params['sequence_count']
     if 'StateMon_Exc'+Net.suffix in Net:
-        tpulse = np.arange(npulses)*params['ISI'] + episode*npulses*params['ISI'] + (episode+1)*params['settling_period']
+        t0_episode = (np.arange(max(episodes)+1) * inputs.get_episode_duration(params))[episodes]
+        t0_pulse = np.arange(npulses)*params['ISI'] + params['settling_period']
         t_in_pulse = np.arange(stop=tmax, step=params['dt'])
-        tpulse_all = ((t_in_pulse[None, :] + tpulse[:, None]) / params['dt'] + .5).astype(int)
-        ones_inhibitory = np.ones((params['N_inh'],) + tpulse_all.shape)
+        T = ((t0_episode[:, None, None] + t0_pulse[None, :, None] + t_in_pulse[None, None, :]) / params['dt'] + .5).astype(int)
+        ones_inhibitory = np.ones((params['N_inh'],) + T.shape)
 
         dynamic_variables = {}
         for varname, init in zip(Net['Exc'+Net.suffix].dynamic_variables, Net['Exc'+Net.suffix].dynamic_variable_initial):
             if not hasattr(Net['StateMon_Exc'+Net.suffix], varname):
                 continue
-            var_exc = getattr(Net['StateMon_Exc'+Net.suffix], varname)[:, tpulse_all]
+            var_exc = getattr(Net['StateMon_Exc'+Net.suffix], varname)[:, T]
             try:
-                var_inh = getattr(Net['StateMon_Inh'+Net.suffix], varname)[:, tpulse_all]
+                var_inh = getattr(Net['StateMon_Inh'+Net.suffix], varname)[:, T]
             except AttributeError:
                 if type(init) == str:
                     var_inh = ones_inhibitory * eval(init, globals(), params)
@@ -177,10 +179,6 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
 
 
 def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
-    raw_dynamics = {}
-    dynamics_output = []
-    dynamic_variables_out = []
-    
     if tmax is not None:
         compress = True
     elif compress:
@@ -195,6 +193,18 @@ def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
     else:
         tmax = params['ISI']
 
+    episodes = set()
+    for pair in rundata['pairs']:
+        for S in (pair['S1'], pair['S2']):
+            for key in ('std', 'dev', 'msc'):
+                episodes.add(pair[key][S])
+    episodes = sorted(list(episodes))
+    episode_mapping = dict(zip(episodes, count()))
+
+    raw_dynamics = get_raw_dynamics(Net, params, episodes, tmax)
+    dynamic_variables = dynamic_variables_out = raw_dynamics.get('dynamic_variables', [])
+    dynamics_output = []
+
     for pair in rundata['pairs']:
         out = {}
         dynamics_output.append(out)
@@ -202,18 +212,10 @@ def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
             out[S] = {}
             for key in ('std', 'dev', 'msc'):
                 episode = pair[key][S]
-                if episode not in raw_dynamics:
-                    raw_dynamics[episode] = get_raw_dynamics(Net, params, episode, tmax)
-                    dynamic_variables = raw_dynamics[episode].get('dynamic_variables', [])
-                    if len(dynamic_variables_out) != len(dynamic_variables):  # only once
-                        dynamic_variables_out = dynamic_variables
-
-                raw = raw_dynamics[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 results = out[S][key] = {}
-                
                 for key, okey in zip(dynamic_variables, dynamic_variables_out):
-                    results[okey] = raw[key][:, pulse_mask]
+                    results[okey] = raw_dynamics[key][:, episode_mapping[episode], pulse_mask]
     rundata['dynamics'] = dynamics_output
     rundata['dynamic_variables'] = dynamic_variables_out
     return dynamics_output
