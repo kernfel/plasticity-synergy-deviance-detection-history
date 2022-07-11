@@ -1,3 +1,4 @@
+import sys, os
 from functools import wraps
 import brian2.numpy_ as np
 from brian2.units.fundamentalunits import (
@@ -31,3 +32,9 @@ def ensure_unit(value, unit):
     else:
         value = value * unit
     return value
+
+
+def brian_cleanup(path='output'):
+    for fname in os.listdir(f'{path}/results'):
+        if fname.startswith('_'):
+            os.remove(f'{path}/results/{fname}')
