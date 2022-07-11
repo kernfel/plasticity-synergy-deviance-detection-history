@@ -186,7 +186,7 @@ def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
             for out in rundata['spikes']:
                 for S in out.keys():
                     for key in out[S].keys():
-                        itmax = out[S][key]['spike_hist'].shape(1)
+                        itmax = out[S][key]['spike_hist'].shape[1]
                         raise StopIteration
         except StopIteration:
             tmax = itmax*params['dt']
