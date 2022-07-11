@@ -26,17 +26,11 @@ def iterspikes(spike_i, spike_t, n, interval, tstart=None, tstop=None):
     '''
     spike_t = ensure_unit(spike_t, second)
     tstart, tstop = get_clean_tbounds(tstart, tstop, interval)
-    istart, iend = 0, 0
+
     for ipulse in range(n):
-        ltstart = (ipulse * interval + tstart)
-        ltstop = (ipulse * interval + tstop)
-        while istart < len(spike_t) and spike_t[istart] < ltstart:
-            istart += 1
-        iend = istart
-        while iend < len(spike_t) and spike_t[iend] < ltstop:
-            iend += 1
-        yield spike_i[istart:iend], spike_t[istart:iend] - ltstart
-        istart = iend
+        ltstart = ipulse*interval + tstart
+        mask = (spike_t >= ltstart) & (spike_t < (ipulse+1)*interval - tstop)
+        yield spike_i[mask], spike_t[mask] - ltstart
 
 
 def bin_spikes(spike_i, spike_t, binsize=1e-3*second, N=None, tmax=None,
