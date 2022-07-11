@@ -115,12 +115,16 @@ Net = model.create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=inputs.get
 templates = [readout.setup_run(Net, params, rng, stimuli, pairings) for _ in range(N_templates)]
 
 for templ, template in enumerate(templates):
-    if templ < start_at['templ']:
+    if templ < start_at.get('templ', 0):
         continue
+    else:
+        start_at.pop('templ')
     for net in range(N_networks):
-        if net < start_at['net']:
+        if net < start_at.get('net', 0):
             continue
-        if templ == 0 and start_at['newnet']:
+        else:
+            start_at.pop('net')
+        if templ == 0 and start_at.pop('newnet', True):
             X, Y, W, D = spatial.create_weights(params, rng)
             try:
                 dd.io.save(netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
@@ -131,12 +135,17 @@ for templ, template in enumerate(templates):
             X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
         for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
             for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
-                if STD < start_at['STD'] or TA < start_at['TA']:
+                if STD < start_at.get('STD', 0) or TA < start_at.get('TA', 0):
                     continue
+                else:
+                    start_at.pop('STD')
+                    start_at.pop('TA')
                 Tstart = time.time()
                 for iISI, isi in enumerate(ISIs):
-                    if isi < start_at['isi']:
+                    if isi < start_at.get('isi', ISIs[0]):
                         continue
+                    else:
+                        start_at.pop('isi')
                     device.reinit()
                     device.activate(**device_args)
                     
