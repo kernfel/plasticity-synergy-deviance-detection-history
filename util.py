@@ -3,6 +3,7 @@ from functools import wraps
 import brian2.numpy_ as np
 from brian2.units.fundamentalunits import (
     Quantity, fail_for_dimension_mismatch, is_dimensionless, DIMENSIONLESS)
+from brian2.core.variables import VariableView
 
 @wraps(np.concatenate)
 def concatenate(arrays, /, **kwargs):
@@ -29,6 +30,8 @@ def ensure_unit(value, unit):
     if isinstance(value, Quantity):
         # value must already be in units [unit]
         assert not isinstance(value/unit, Quantity)
+    elif isinstance(value, VariableView):
+        assert not isinstance(value[0]/unit, Quantity)
     else:
         value = value * unit
     return value
