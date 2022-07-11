@@ -10,52 +10,29 @@ np.concatenate = concatenate
 from spike_utils import iterspikes
 
 
-
-def get_episode_spikes(Net, params, episode=0, sorted=True, with_xr=False):
+def get_raw_spikes(Net, params, episodes):
     offset = 0
-    T, I = [], []
-    full_episode_duration = inputs.get_episode_duration(params)
-    data_duration = full_episode_duration - params['settling_period']
-    t0 = episode * full_episode_duration + params['settling_period']
-    for k in ['Exc'+Net.suffix, 'Inh'+Net.suffix]:
-        t, i = Net[f'SpikeMon_{k}'].t, Net[f'SpikeMon_{k}'].i + offset
-        offset += Net[k].N
-        mask = (t >= t0 - 0.5*params['dt']) & (t < t0 + data_duration - 0.5*params['dt'])
-        T.append(t[mask])
-        I.append(i[mask])
-    T = np.concatenate(T) - t0
-    I = np.concatenate(I)
-    if sorted:
-        sorted = np.argsort(T)
-        T, I = T[sorted], I[sorted]
-    
-    if with_xr and 'StateMon_Exc'+Net.suffix in Net and hasattr(Net['StateMon_Exc'+Net.suffix], 'synaptic_xr'):
-        i0 = int(t0/params['dt'] + 0.5)
-        try:
-            import brian2genn
-            if isinstance(get_device(), brian2genn.device.GeNNDevice):
-                i0 -= 1
-        except ModuleNotFoundError:
-            pass
-        iend = i0 + int(data_duration/params['dt'] + 0.5)
-        iT = (T/params['dt'] + 0.5).astype(int)
-        xr_rec = Net['StateMon_Exc'+Net.suffix].synaptic_xr[:, i0:iend]
-        xr = np.ones(I.shape)
-        Imask = I < params['N_exc']
-        xr[Imask] = xr_rec[I[Imask], iT[Imask]]
-    else:
-        xr = None
-    return I, T, xr
-
-
-def get_raw_spikes(Net, params, episode):
-    raw = {}
     npulses = params['sequence_length']*params['sequence_count']
-    spike_i, spike_t, _ = get_episode_spikes(Net, params, episode=episode)
-    raw['pulsed_i'], raw['pulsed_t'] = zip(*list(iterspikes(spike_i, spike_t, npulses, params['ISI'])))
-    raw['pulsed_nspikes'] = np.zeros((len(raw['pulsed_i']), params['N']), int)
-    for j, i in enumerate(raw['pulsed_i']):
-        np.add.at(raw['pulsed_nspikes'][j], i, 1)
+    episodes = sorted(episodes)
+    T, I = [{episode: [] for episode in episodes} for _ in range(2)]
+    raw = {episode: {} for episode in episodes}
+    for k in ['Exc'+Net.suffix, 'Inh'+Net.suffix]:
+        all_t, all_i = Net[f'SpikeMon_{k}'].t, Net[f'SpikeMon_{k}'].i + offset
+        offset += Net[k].N
+        for episode, (episodic_i, episodic_t) in enumerate(iterspikes(all_i, all_t, max(episodes)+1, inputs.get_episode_duration(params))):
+            if episode in episodes:
+                T[episode].append(episodic_t)
+                I[episode].append(episodic_i)
+    
+    for episode in episodes:
+        episodic_t = np.concatenate(T[episode]) - params['settling_period']
+        idx = np.argsort(episodic_t)
+        episodic_t = episodic_t[idx]
+        episodic_i = np.concatenate(I[episode])[idx]
+        raw[episode]['pulsed_i'], raw[episode]['pulsed_t'] = zip(*list(iterspikes(episodic_i, episodic_t, npulses, params['ISI'])))
+        raw[episode]['pulsed_nspikes'] = np.zeros((len(raw[episode]['pulsed_i']), params['N']), int)
+        for j, i in enumerate(raw[episode]['pulsed_i']):
+            np.add.at(raw[episode]['pulsed_nspikes'][j], i, 1)
     return raw
 
 
@@ -133,10 +110,17 @@ def quantify_presynaptic(W, params, hist, xr):
 
 
 def get_spike_results(Net, params, rundata, compress=False, tmax=None):
-    raw_spikes = {}
     spike_output = []
     itmax = 0
     rundata['msc_spikes'] = {}
+
+    episodes = set()
+    for pair in rundata['pairs']:
+        for S in (pair['S1'], pair['S2']):
+            for key in ('std', 'dev', 'msc'):
+                episodes.add(pair[key][S])
+
+    raw_spikes = get_raw_spikes(Net, params, list(episodes))    
     for pair in rundata['pairs']:
         out = {}
         spike_output.append(out)
@@ -144,10 +128,8 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
             out[S] = {}
             for key in ('std', 'dev', 'msc'):
                 episode = pair[key][S]
-                if episode not in raw_spikes:
-                    raw_spikes[episode] = get_raw_spikes(Net, params, episode)
-                    if key == 'msc':
-                        rundata['msc_spikes'][episode] = raw_spikes[episode]
+                if key == 'msc' and episode not in rundata['msc_spikes']:
+                    rundata['msc_spikes'][episode] = raw_spikes[episode]
 
                 raw = raw_spikes[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
