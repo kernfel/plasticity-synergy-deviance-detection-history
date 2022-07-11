@@ -9,14 +9,13 @@ import brian2genn
 import numpy_ as np
 import spatial, model, inputs, readout
 
-from util import concatenate
-np.concatenate = concatenate
-from spike_utils import iterspikes
+from util import brian_cleanup
 
 
 gpuid = 1
+working_dir = f'GPU{gpuid}'
 rng = np.random.default_rng()
-device_args = dict(directory=f'GPU{gpuid}')
+device_args = dict(directory=working_dir)
 set_device('genn', **device_args)
 prefs.devices.genn.cuda_backend.device_select='MANUAL'
 prefs.devices.genn.cuda_backend.manual_device=gpuid
@@ -94,6 +93,7 @@ params = {
 N_networks = 30
 N_templates = 5
 ISIs = (100, 500, 1000, 2000)
+start_at = dict(net=0, isi=100, STD=0, TA=0, templ=0, newnet=True)
 fbase = '/data/felix/culture/isi3_'
 # fbase = 'data/isi2_'
 fname = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}.{type_suffix}.h5'
@@ -115,8 +115,12 @@ Net = model.create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=inputs.get
 templates = [readout.setup_run(Net, params, rng, stimuli, pairings) for _ in range(N_templates)]
 
 for templ, template in enumerate(templates):
+    if templ < start_at['templ']:
+        continue
     for net in range(N_networks):
-        if templ == 0:
+        if net < start_at['net']:
+            continue
+        if templ == 0 and start_at['newnet']:
             X, Y, W, D = spatial.create_weights(params, rng)
             try:
                 dd.io.save(netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
@@ -127,8 +131,12 @@ for templ, template in enumerate(templates):
             X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
         for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
             for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
+                if STD < start_at['STD'] or TA < start_at['TA']:
+                    continue
                 Tstart = time.time()
                 for iISI, isi in enumerate(ISIs):
+                    if isi < start_at['isi']:
+                        continue
                     device.reinit()
                     device.activate(**device_args)
                     
@@ -177,5 +185,6 @@ for templ, template in enumerate(templates):
                         dd.io.save(fname.format(**locals(), type_suffix='dynamics'), rundata)
                     except Exception as e:
                         print(e)
+                    brian_cleanup(working_dir)
 
                 print(f'Completed GPU ISI sweep (templ {templ}, net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
