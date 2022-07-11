@@ -140,7 +140,11 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
                 results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
                 results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
 
-                itmax = max(itmax, np.max(np.nonzero(results['spike_hist'])[1]) + 1)
+                nz = np.nonzero(results['spike_hist'])[1]
+                if len(nz):
+                    itmax = max(itmax, np.max(nz) + 1)
+                else:
+                    itmax = max(itmax, results['spike_hist'].shape[1])
     
     if tmax is not None:
         itmax = int(tmax/params['dt'] + 0.5)
