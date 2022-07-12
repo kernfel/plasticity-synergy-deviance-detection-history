@@ -1,18 +1,11 @@
 import time
 import multiprocessing as mp
-import matplotlib.pyplot as plt
 import deepdish as dd
 from brian2.only import *
-import brian2genn
 
 # for the IDE:
 import numpy_ as np
 import spatial, model, inputs, readout
-
-from util import concatenate
-np.concatenate = concatenate
-from spike_utils import iterspikes
-
 
 gpuid = 0
 rng = np.random.default_rng()
@@ -89,13 +82,12 @@ params = {
 }
 
 
-N_networks = 5
+N_networks = 1
 skip_nets = 0
 N_templates = 1
-ISIs = (100, 300, 500, 750, 1000)
-# fbase = '/data/felix/culture/isi0_'
-fbase = 'data/isi0_'
-fname = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}.{type_suffix}.h5'
+ISIs = (100, 500, 1000)
+fbase = 'data/isi4_'
+fname = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}.h5'
 figfile = fbase + 'indices.png'
 idxfile = fbase + 'idx.h5'
 netfile = fbase + 'net{net}.h5'
@@ -153,8 +145,7 @@ for templ, template in enumerate(templates):
                                 if not TA:
                                     rt['th_adapt'] = zeros_like(rt['v'])*volt
                     try:
-                        dd.io.save(fname.format(**locals(), type_suffix='spikes'), {k:v for k,v in rundata.items() if k != 'dynamics'})
-                        dd.io.save(fname.format(**locals(), type_suffix='dynamics'), rundata)
+                        dd.io.save(fname.format(**locals()), rundata)
                     except Exception as e:
                         print(e)
 
