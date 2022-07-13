@@ -16,7 +16,7 @@ from util import brian_cleanup
 
 def run_cpu(templ, STD, TA, mod_params, *net_args, **device_args):
     device.reinit()
-    device.activate()
+    device.activate(**device_args)
 
     if templ < cfg.N_templates_with_dynamics:
         Net = model.create_network(
@@ -85,23 +85,18 @@ if __name__ == '__main__':
 
     if 'gpuid' in dir(cfg):
         working_dir = f'tmp/GPU{cfg.gpuid}'
-        device_args = dict(directory=working_dir)
-        set_device('genn', **device_args)
+        dev = 'genn'
         prefs.devices.genn.cuda_backend.device_select='MANUAL'
         prefs.devices.genn.cuda_backend.manual_device=cfg.gpuid
         runit = run_genn
-    elif 'runtime' not in dir(cfg) or not cfg.runtime:
+    else:
         working_dir = 'tmp/CPP'
-        device_args = {}
-        set_device('cpp_standalone')
+        dev = 'cpp_standalone'
         prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() - 2
         runit = run_cpu
-    else:
-        working_dir = 'tmp/Runtime'
-        device_args = {}
-        set_device('runtime')
-        runit = run_cpu
+    device_args = dict(directory=working_dir)
     os.makedirs(working_dir, exist_ok=True)
+    set_device(dev, **device_args)
 
     rng = np.random.default_rng()
 
