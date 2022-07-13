@@ -128,8 +128,8 @@ if __name__ == '__main__':
             else:
                 res = dd.io.load(cfg.netfile.format(net=net))
                 X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
-            for STD, tau_rec_ in enumerate((0*ms, cfg.params['tau_rec'])):
-                for TA, th_ampl_ in enumerate((0*mV, cfg.params['th_ampl'])):
+            for STD in cfg.STDs:
+                for TA in cfg.TAs:
                     if STD < cfg.start_at.get('STD', 0) or TA < cfg.start_at.get('TA', 0):
                         continue
                     else:
@@ -141,7 +141,9 @@ if __name__ == '__main__':
                             continue
                         else:
                             cfg.start_at.pop('isi', 0)
-                        mod_params = {**cfg.params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
+                        mod_params = {**cfg.params, 'ISI': isi*ms,
+                                      'tau_rec': (0*ms, cfg.params['tau_rec'])[STD],
+                                      'th_ampl': (0*mV, cfg.params['th_ampl'])[TA]}
                         
                         rundata = runit(template, templ<cfg.N_templates_with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D)
                         
