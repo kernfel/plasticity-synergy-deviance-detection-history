@@ -55,7 +55,7 @@ for templ, template in enumerate(templates):
                     cfg.start_at.pop('STD', 0)
                     cfg.start_at.pop('TA', 0)
                 Tstart = time.time()
-                for iISI, isi in enumerate(cfg.cfg.ISIs):
+                for iISI, isi in enumerate(cfg.ISIs):
                     if isi < cfg.start_at.get('isi', cfg.ISIs[0]):
                         continue
                     else:
