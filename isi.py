@@ -1,6 +1,7 @@
 import time
 import sys
 import os
+import functools
 import importlib
 import multiprocessing as mp
 import deepdish as dd
@@ -14,11 +15,11 @@ import spatial, model, inputs, readout
 from util import brian_cleanup
 
 
-def run_cpu(templ, STD, TA, mod_params, *net_args, **device_args):
+def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **device_args):
     device.reinit()
     device.activate(**device_args)
 
-    if templ < cfg.N_templates_with_dynamics:
+    if with_dynamics:
         Net = model.create_network(
             *net_args, params=mod_params,
             reset_dt=inputs.get_episode_duration(mod_params),
@@ -30,18 +31,18 @@ def run_cpu(templ, STD, TA, mod_params, *net_args, **device_args):
             *net_args, params=mod_params,
             reset_dt=inputs.get_episode_duration(mod_params))
     
-    rundata = readout.repeat_run(Net, mod_params, templates[templ])
+    rundata = readout.repeat_run(Net, mod_params, template)
     rundata['params'] = mod_params
     Net.run(rundata['runtime'])
     readout.get_results(Net, mod_params, rundata, tmax=cfg.ISIs[0]*ms)
     return rundata
 
 
-def run_genn(templ, STD, TA, mod_params, *net_args, **device_args):
+def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **device_args):
     device.reinit()
     device.activate(**device_args)
     
-    if templ < cfg.N_templates_with_dynamics:
+    if with_dynamics:
         Net = model.create_network(
             *net_args, params=mod_params,
             reset_dt=inputs.get_episode_duration(mod_params),
@@ -51,12 +52,12 @@ def run_genn(templ, STD, TA, mod_params, *net_args, **device_args):
             *net_args, params=mod_params,
             reset_dt=inputs.get_episode_duration(mod_params))
     
-    rundata = readout.repeat_run(Net, mod_params, templates[templ])
+    rundata = readout.repeat_run(Net, mod_params, template)
     rundata['params'] = mod_params
     Net.run(rundata['runtime'])
     readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)
 
-    if STD and templ < cfg.N_templates_with_dynamics:
+    if STD and with_dynamics:
         surrogate = {k: {'t': Net[f'SpikeMon_{k}'].t[:], 'i': Net[f'SpikeMon_{k}'].i[:]} for k in ('Exc', 'Inh')}
 
         device.reinit()
@@ -69,7 +70,7 @@ def run_genn(templ, STD, TA, mod_params, *net_args, **device_args):
             state_dt=cfg.params['dt'], state_vars=['v'],
             surrogate=surrogate, suffix='_surrogate')
         
-        rundata_U = readout.repeat_run(Net, mod_params_U, templates[templ])
+        rundata_U = readout.repeat_run(Net, mod_params_U, template)
         Net.run(rundata_U['runtime'])
         readout.get_results(Net, mod_params_U, rundata_U, compress=True, tmax=cfg.ISIs[0]*ms)
         for V_pair, U_pair in zip(rundata['dynamics'], rundata_U['dynamics']):
@@ -97,6 +98,7 @@ if __name__ == '__main__':
     device_args = dict(directory=working_dir)
     os.makedirs(working_dir, exist_ok=True)
     set_device(dev, **device_args)
+    runit = functools.partial(runit, cfg, **device_args)
 
     rng = np.random.default_rng()
 
@@ -141,7 +143,7 @@ if __name__ == '__main__':
                             cfg.start_at.pop('isi', 0)
                         mod_params = {**cfg.params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
                         
-                        rundata = runit(templ, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D, **device_args)
+                        rundata = runit(template, templ<cfg.N_templates_with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D)
                         
                         for r in rundata['dynamics']:
                             for rs in r.values():
