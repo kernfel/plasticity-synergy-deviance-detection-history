@@ -95,10 +95,12 @@ if __name__ == '__main__':
         device_args = {}
         set_device('cpp_standalone')
         prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() - 2
+        runit = run_cpu
     else:
         working_dir = 'tmp/Runtime'
         device_args = {}
         set_device('runtime')
+        runit = run_cpu
     os.makedirs(working_dir, exist_ok=True)
 
     rng = np.random.default_rng()
