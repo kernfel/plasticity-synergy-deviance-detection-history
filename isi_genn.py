@@ -32,12 +32,12 @@ for templ, template in enumerate(templates):
     if templ < cfg.start_at.get('templ', 0):
         continue
     else:
-        cfg.start_at.pop('templ')
+        cfg.start_at.pop('templ', 0)
     for net in range(cfg.N_networks):
         if net < cfg.start_at.get('net', 0):
             continue
         else:
-            cfg.start_at.pop('net')
+            cfg.start_at.pop('net', 0)
         if templ == 0 and cfg.start_at.pop('newnet', True):
             X, Y, W, D = spatial.create_weights(cfg.params, rng)
             try:
@@ -52,14 +52,14 @@ for templ, template in enumerate(templates):
                 if STD < cfg.start_at.get('STD', 0) or TA < cfg.start_at.get('TA', 0):
                     continue
                 else:
-                    cfg.start_at.pop('STD')
-                    cfg.start_at.pop('TA')
+                    cfg.start_at.pop('STD', 0)
+                    cfg.start_at.pop('TA', 0)
                 Tstart = time.time()
                 for iISI, isi in enumerate(cfg.cfg.ISIs):
                     if isi < cfg.start_at.get('isi', cfg.ISIs[0]):
                         continue
                     else:
-                        cfg.start_at.pop('isi')
+                        cfg.start_at.pop('isi', 0)
                     device.reinit()
                     device.activate(**device_args)
                     
