@@ -1,152 +1,163 @@
 import time
+import sys
+import os
+import importlib
 import multiprocessing as mp
 import deepdish as dd
 from brian2.only import *
+import brian2genn
 
 # for the IDE:
 import numpy_ as np
 import spatial, model, inputs, readout
 
-gpuid = 0
-rng = np.random.default_rng()
-set_device('cpp_standalone')
-prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() - 2
+from util import brian_cleanup
 
 
-N = 1000
-inhibitory_ratio = .2
-params = {
-    # Simulation
-    'dt': 1*ms,
+def run_cpu(templ, STD, TA, mod_params, *net_args, **device_args):
+    device.reinit()
+    device.activate()
+
+    if templ < cfg.N_templates_with_dynamics:
+        Net = model.create_network(
+            *net_args, params=mod_params,
+            reset_dt=inputs.get_episode_duration(mod_params),
+            state_dt=cfg.params['dt'],
+            state_vars=['v'] + [k for k,v in (('th_adapt', TA), ('u', STD)) if v],
+            extras=('u',) if STD else ())
+    else:
+        Net = model.create_network(
+            *net_args, params=mod_params,
+            reset_dt=inputs.get_episode_duration(mod_params))
     
-    # Population size
-    'N': N,
-    'N_exc': int((1-inhibitory_ratio) * N),
-    'N_inh': int(inhibitory_ratio * N),
+    rundata = readout.repeat_run(Net, mod_params, templates[templ])
+    rundata['params'] = mod_params
+    Net.run(rundata['runtime'])
+    readout.get_results(Net, mod_params, rundata, tmax=cfg.ISIs[0]*ms)
+    return rundata
 
-    # Membrane
-    'v_rest': -60*mV,
-    'v_reset': -74*mV,
-    'v_threshold': -54*mV,
-    'voltage_init': 'v_rest',
+
+def run_genn(templ, STD, TA, mod_params, *net_args, **device_args):
+    device.reinit()
+    device.activate(**device_args)
     
-    'tau_mem': 30*ms,
-    'refractory_exc': 3*ms,
-    'refractory_inh': 2*ms,
-
-    # Threshold adaptation - Exc
-    'th_tau': 1*second,
-    'th_ampl': 1*mV,
-
-    # Short-term plasticity - Exc
-    'tau_rec': 150*msecond,
-    'U': 0.4,
-
-    # Synapse dynamics
-    'E_exc': 0*mV,
-    'tau_ampa': 2*msecond,
-    'E_inh': -100*mV,
-    'tau_gaba': 4*msecond,
+    if templ < cfg.N_templates_with_dynamics:
+        Net = model.create_network(
+            *net_args, params=mod_params,
+            reset_dt=inputs.get_episode_duration(mod_params),
+            state_dt=cfg.params['dt'], state_vars=['v'] + (['th_adapt'] if TA else []))
+    else:
+        Net = model.create_network(
+            *net_args, params=mod_params,
+            reset_dt=inputs.get_episode_duration(mod_params))
     
-    # # Stochasticity
-    # 'tau_noise': 10*msecond,
-    # 'vnoise_std': 0.5*mV,
+    rundata = readout.repeat_run(Net, mod_params, templates[templ])
+    rundata['params'] = mod_params
+    Net.run(rundata['runtime'])
+    readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)
 
-    # Layout
-    'r_dish': 4*mm,
-    'weight_distribution': 'singular',
-    
-    # Connectivity: Inh
-    'r_inh': 1*mm,
-    'outdeg_inh': 50,
-    'w_inh_mean': 1,
+    if STD and templ < cfg.N_templates_with_dynamics:
+        surrogate = {k: {'t': Net[f'SpikeMon_{k}'].t[:], 'i': Net[f'SpikeMon_{k}'].i[:]} for k in ('Exc', 'Inh')}
 
-    # Connectivity: Exc
-    'r_exc': 2*mm,
-    'outdeg_exc': 50,
-    'w_exc_mean': 1,
-
-    # Stimulus
-    'N_stimuli': 5,
-    'stim_distribution_radius': 2.5*mm,
-    'neurons_per_stim': 10,
-    'input_strength': 100,
-
-    # Paradigm
-    'settling_period': 1*second,
-    'sequence_length': 5,
-    'sequence_count': 100,
-    'fully_random_msc': True,
-    'fully_random_oddball': True,
-    'ISI': 100*ms
-}
+        device.reinit()
+        device.activate(**device_args)
+        
+        mod_params_U = {**mod_params, 'tau_rec': 0*ms}
+        Net = model.create_network(
+            *net_args, params=mod_params_U,
+            reset_dt=inputs.get_episode_duration(mod_params_U),
+            state_dt=cfg.params['dt'], state_vars=['v'],
+            surrogate=surrogate, suffix='_surrogate')
+        
+        rundata_U = readout.repeat_run(Net, mod_params_U, templates[templ])
+        Net.run(rundata_U['runtime'])
+        readout.get_results(Net, mod_params_U, rundata_U, compress=True, tmax=cfg.ISIs[0]*ms)
+        for V_pair, U_pair in zip(rundata['dynamics'], rundata_U['dynamics']):
+            for S in V_pair.keys():
+                for tp in V_pair[S].keys():
+                    V_pair[S][tp]['u'] = U_pair[S][tp]['v']
+        rundata['dynamic_variables'].append('u')
+    return rundata
 
 
-N_networks = 1
-skip_nets = 0
-N_templates = 1
-ISIs = (100, 500, 1000)
-fbase = 'data/isi4_'
-fname = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}.h5'
-figfile = fbase + 'indices.png'
-idxfile = fbase + 'idx.h5'
-netfile = fbase + 'net{net}.h5'
+if __name__ == '__main__':
+    cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
 
+    if 'gpuid' in dir(cfg):
+        working_dir = f'tmp/GPU{cfg.gpuid}'
+        device_args = dict(directory=working_dir)
+        set_device('genn', **device_args)
+        prefs.devices.genn.cuda_backend.device_select='MANUAL'
+        prefs.devices.genn.cuda_backend.manual_device=cfg.gpuid
+        runit = run_genn
+    elif 'runtime' not in dir(cfg) or not cfg.runtime:
+        working_dir = 'tmp/CPP'
+        device_args = {}
+        set_device('cpp_standalone')
+        prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() - 2
+    else:
+        working_dir = 'tmp/Runtime'
+        device_args = {}
+        set_device('runtime')
+    os.makedirs(working_dir, exist_ok=True)
 
-Xstim, Ystim = spatial.create_stimulus_locations(params)
-stimuli = {key: j for j, key in enumerate('ABCDE')}
-pairings=(('A','B'), ('C','E'))
+    rng = np.random.default_rng()
 
-# Set up input template
-X, Y, W, D = spatial.create_weights(params, rng)
-Net = model.create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=inputs.get_episode_duration(params))
-templates = [readout.setup_run(Net, params, rng, stimuli, pairings) for _ in range(N_templates)]
+    Xstim, Ystim = spatial.create_stimulus_locations(cfg.params)
 
-for templ, template in enumerate(templates):
-    for net in range(skip_nets, N_networks):
-        if templ == 0:
-            if net == 0:
-                f = np.load('presynaptic_events_singular.npz')
-                W, X, Y, D = [f[k] for k in 'WXYD']
-                X, Y = X*meter, Y*meter
-            else:
-                X, Y, W, D = spatial.create_weights(params, rng)
-            try:
-                dd.io.save(netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
-            except Exception as e:
-                print(e)
+    # Set up input templates
+    X, Y, W, D = spatial.create_weights(cfg.params, rng)
+    Net = model.create_network(X, Y, Xstim, Ystim, W, D, cfg.params, reset_dt=inputs.get_episode_duration(cfg.params))
+    templates = [readout.setup_run(Net, cfg.params, rng, cfg.stimuli, cfg.pairings) for _ in range(cfg.N_templates)]
+
+    for templ, template in enumerate(templates):
+        if templ < cfg.start_at.get('templ', 0):
+            continue
         else:
-            res = dd.io.load(netfile.format(net=net))
-            X, Y, W, D = res['X'], res['Y'], res['W'], res['D']
-        for STD, tau_rec_ in enumerate((0*ms, params['tau_rec'])):
-            for TA, th_ampl_ in enumerate((0*mV, params['th_ampl'])):
-                Tstart = time.time()
-                for iISI, isi in enumerate(ISIs):
-                    device.reinit()
-                    device.activate()
-                    
-                    mod_params = {**params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
-                    Net = model.create_network(
-                        X, Y, Xstim, Ystim, W, D, mod_params,
-                        reset_dt=inputs.get_episode_duration(mod_params),
-                        state_dt=params['dt'],
-                        state_vars=['v'] + [k for k,v in (('th_adapt', TA), ('u', STD)) if v],
-                        extras=('u',) if STD else ())
-                    
-                    rundata = readout.repeat_run(Net, mod_params, template)
-                    rundata['params'] = mod_params
-                    Net.run(rundata['runtime'])
-                    readout.get_results(Net, mod_params, rundata, tmax=ISIs[0]*ms)
-                    for r in rundata['dynamics']:
-                        for rs in r.values():
-                            for rt in rs.values():
-                                if not STD:
-                                    rt['u'] = rt['v']
-                                if not TA:
-                                    rt['th_adapt'] = zeros_like(rt['v'])*volt
-                    try:
-                        dd.io.save(fname.format(**locals()), rundata)
-                    except Exception as e:
-                        print(e)
+            cfg.start_at.pop('templ', 0)
+        for net in range(cfg.N_networks):
+            if net < cfg.start_at.get('net', 0):
+                continue
+            else:
+                cfg.start_at.pop('net', 0)
+            if templ == 0 and cfg.start_at.pop('newnet', True):
+                X, Y, W, D = spatial.create_weights(cfg.params, rng)
+                try:
+                    dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
+                except Exception as e:
+                    print(e)
+            else:
+                res = dd.io.load(cfg.netfile.format(net=net))
+                X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
+            for STD, tau_rec_ in enumerate((0*ms, cfg.params['tau_rec'])):
+                for TA, th_ampl_ in enumerate((0*mV, cfg.params['th_ampl'])):
+                    if STD < cfg.start_at.get('STD', 0) or TA < cfg.start_at.get('TA', 0):
+                        continue
+                    else:
+                        cfg.start_at.pop('STD', 0)
+                        cfg.start_at.pop('TA', 0)
+                    Tstart = time.time()
+                    for iISI, isi in enumerate(cfg.ISIs):
+                        if isi < cfg.start_at.get('isi', cfg.ISIs[0]):
+                            continue
+                        else:
+                            cfg.start_at.pop('isi', 0)
+                        mod_params = {**cfg.params, 'ISI': isi*ms, 'tau_rec': tau_rec_, 'th_ampl': th_ampl_}
+                        
+                        rundata = runit(templ, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D, **device_args)
+                        
+                        for r in rundata['dynamics']:
+                            for rs in r.values():
+                                for rt in rs.values():
+                                    if not STD:
+                                        rt['u'] = rt['v']
+                                    if not TA:
+                                        rt['th_adapt'] = zeros_like(rt['v'])*volt
+                        
+                        try:
+                            dd.io.save(cfg.fname.format(**locals()), rundata)
+                        except Exception as e:
+                            print(e)
+                        brian_cleanup(working_dir)
 
-                print(f'Completed CPU ISI sweep (net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
+                    print(f'Completed GPU ISI sweep (templ {templ}, net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
