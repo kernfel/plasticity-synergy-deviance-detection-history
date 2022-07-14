@@ -83,6 +83,7 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **dev
 
 if __name__ == '__main__':
     cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
+    start_at = cfg.start_at.copy() if 'start_at' in dir(cfg) else {}
 
     if 'gpuid' in dir(cfg):
         working_dir = f'tmp/GPU{cfg.gpuid}'
@@ -110,16 +111,16 @@ if __name__ == '__main__':
     templates = [readout.setup_run(Net, cfg.params, rng, cfg.stimuli, cfg.pairings) for _ in range(cfg.N_templates)]
 
     for templ, template in enumerate(templates):
-        if templ < cfg.start_at.get('templ', 0):
+        if templ < start_at.get('templ', 0):
             continue
         else:
-            cfg.start_at.pop('templ', 0)
+            start_at.pop('templ', 0)
         for net in range(cfg.N_networks):
-            if net < cfg.start_at.get('net', 0):
+            if net < start_at.get('net', 0):
                 continue
             else:
-                cfg.start_at.pop('net', 0)
-            if templ == 0 and cfg.start_at.pop('newnet', True):
+                start_at.pop('net', 0)
+            if templ == 0 and start_at.pop('newnet', True):
                 X, Y, W, D = spatial.create_weights(cfg.params, rng)
                 try:
                     dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
@@ -130,17 +131,17 @@ if __name__ == '__main__':
                 X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
             for STD in cfg.STDs:
                 for TA in cfg.TAs:
-                    if STD < cfg.start_at.get('STD', 0) or TA < cfg.start_at.get('TA', 0):
+                    if STD < start_at.get('STD', 0) or TA < start_at.get('TA', 0):
                         continue
                     else:
-                        cfg.start_at.pop('STD', 0)
-                        cfg.start_at.pop('TA', 0)
+                        start_at.pop('STD', 0)
+                        start_at.pop('TA', 0)
                     Tstart = time.time()
                     for iISI, isi in enumerate(cfg.ISIs):
-                        if isi < cfg.start_at.get('isi', cfg.ISIs[0]):
+                        if isi < start_at.get('isi', cfg.ISIs[0]):
                             continue
                         else:
-                            cfg.start_at.pop('isi', 0)
+                            start_at.pop('isi', 0)
                         mod_params = {**cfg.params, 'ISI': isi*ms,
                                       'tau_rec': (0*ms, cfg.params['tau_rec'])[STD],
                                       'th_ampl': (0*mV, cfg.params['th_ampl'])[TA]}
