@@ -121,7 +121,11 @@ if __name__ == '__main__':
             else:
                 start_at.pop('net', 0)
             if templ == 0 and start_at.pop('newnet', True):
-                X, Y, W, D = spatial.create_weights(cfg.params, rng)
+                if 'nets' in dir(cfg) and net in cfg.nets:
+                    res = dd.io.load(cfg.nets[net])
+                    X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
+                else:
+                    X, Y, W, D = spatial.create_weights(cfg.params, rng)
                 try:
                     dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
                 except Exception as e:
