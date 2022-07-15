@@ -129,7 +129,8 @@ if __name__ == '__main__':
                 else:
                     X, Y, W, D = spatial.create_weights(cfg.params, rng)
                 try:
-                    dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D))
+                    stimulated_neurons = spatial.get_stimulated(X, Y, Xstim, Ystim, cfg.params)
+                    dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D, stimulated_neurons=stimulated_neurons))
                 except Exception as e:
                     print(e)
             else:
