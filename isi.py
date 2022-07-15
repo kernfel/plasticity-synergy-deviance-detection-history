@@ -116,6 +116,7 @@ if __name__ == '__main__':
             continue
         else:
             start_at.pop('templ', 0)
+        with_dynamics = templ < cfg.N_templates_with_dynamics
         for net in range(cfg.N_networks):
             if net < start_at.get('net', 0):
                 continue
@@ -151,18 +152,18 @@ if __name__ == '__main__':
                                       'tau_rec': (0*ms, cfg.params['tau_rec'])[STD],
                                       'th_ampl': (0*mV, cfg.params['th_ampl'])[TA]}
                         
-                        rundata = runit(template, templ<cfg.N_templates_with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D)
+                        rundata = runit(template, with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D)
                         
-                        for r in rundata['dynamics']:
-                            for rs in r.values():
-                                for rt in rs.values():
-                                    if not STD:
-                                        rt['u'] = rt['v']
-                                    if not TA:
-                                        rt['th_adapt'] = zeros_like(rt['v'])*volt
-                        
-                        rundata['voltage_histograms'], rundata['masked_voltage_histograms'] = get_voltage_histograms(mod_params, rundata)
-                        rundata.pop('dynamics')
+                        if with_dynamics:
+                            for r in rundata['dynamics']:
+                                for rs in r.values():
+                                    for rt in rs.values():
+                                        if not STD:
+                                            rt['u'] = rt['v']
+                                        if not TA:
+                                            rt['th_adapt'] = zeros_like(rt['v'])*volt
+                            rundata['voltage_histograms'], rundata['masked_voltage_histograms'] = get_voltage_histograms(mod_params, rundata)
+                            rundata.pop('dynamics')
 
                         try:
                             dd.io.save(cfg.fname.format(**locals()), rundata)
