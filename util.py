@@ -1,9 +1,11 @@
 import sys, os
+from collections import defaultdict
 from functools import wraps
 import brian2.numpy_ as np
 from brian2.units.fundamentalunits import (
     Quantity, fail_for_dimension_mismatch, is_dimensionless, DIMENSIONLESS)
 from brian2.core.variables import VariableView
+
 
 @wraps(np.concatenate)
 def concatenate(arrays, /, **kwargs):
@@ -41,3 +43,11 @@ def brian_cleanup(path='output'):
     for fname in os.listdir(f'{path}/results'):
         if fname.startswith('_'):
             os.remove(f'{path}/results/{fname}')
+
+
+class Tree(defaultdict):
+    def __init__(self, *args):
+        super().__init__(*(args or (Tree,)))
+    
+    def asdict(self):
+        return {k: v.asdict() if isinstance(v, Tree) else v for k, v in self.items()}
