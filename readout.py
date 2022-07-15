@@ -166,9 +166,7 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
 
 def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
     if 'StateMon_Exc'+Net.suffix not in Net:
-        rundata['dynamics'] = []
-        rundata['dynamic_variables'] = []
-        return rundata['dynamics']
+        return None
 
     if tmax is not None:
         compress = True
