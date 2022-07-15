@@ -13,6 +13,7 @@ import numpy_ as np
 import spatial, model, inputs, readout
 
 from util import brian_cleanup
+from digest import get_voltage_histograms
 
 
 def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **device_args):
@@ -160,6 +161,9 @@ if __name__ == '__main__':
                                     if not TA:
                                         rt['th_adapt'] = zeros_like(rt['v'])*volt
                         
+                        rundata['voltage_histograms'], rundata['masked_voltage_histograms'] = get_voltage_histograms(mod_params, rundata)
+                        rundata.pop('dynamics')
+
                         try:
                             dd.io.save(cfg.fname.format(**locals()), rundata)
                         except Exception as e:
