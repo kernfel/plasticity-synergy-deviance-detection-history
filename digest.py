@@ -44,7 +44,7 @@ def get_voltage_histograms(params, rundata, overflow=None):
                     dynamics = rundata['dynamics'][ipair][stim][cond]
                     voltages = get_voltages(params, dynamics, overflow)
                     bmask = voltages['Activity'] >= 0
-                    masked_hists['weight'] = np.mean(bmask, 1)
+                    masked_hists['weight'][ipair][stim][cond] = np.mean(bmask, 1)
                     mask = np.where(bmask, 1, np.nan)
                     for measure, val in voltages.items():
                         hists[measure][ipair][stim][cond] = val.mean(1)
