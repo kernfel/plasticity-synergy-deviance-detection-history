@@ -19,7 +19,8 @@ def get_raw_spikes(Net, params, episodes):
     for k in ['Exc'+Net.suffix, 'Inh'+Net.suffix]:
         all_t, all_i = Net[f'SpikeMon_{k}'].t, Net[f'SpikeMon_{k}'].i + offset
         offset += Net[k].N
-        for episode, (episodic_i, episodic_t) in enumerate(iterspikes(all_i, all_t, max(episodes)+1, inputs.get_episode_duration(params))):
+        for episode, (episodic_i, episodic_t) in enumerate(iterspikes(
+                all_i, all_t, max(episodes)+1, inputs.get_episode_duration(params), dt=params['dt'])):
             if episode in episodes:
                 T[episode].append(episodic_t)
                 I[episode].append(episodic_i)
@@ -29,7 +30,8 @@ def get_raw_spikes(Net, params, episodes):
         idx = np.argsort(episodic_t)
         episodic_t = episodic_t[idx]
         episodic_i = np.concatenate(I[episode])[idx]
-        raw[episode]['pulsed_i'], raw[episode]['pulsed_t'] = zip(*list(iterspikes(episodic_i, episodic_t, npulses, params['ISI'])))
+        raw[episode]['pulsed_i'], raw[episode]['pulsed_t'] = zip(*list(iterspikes(
+            episodic_i, episodic_t, npulses, params['ISI'], dt=params['dt'])))
         raw[episode]['pulsed_nspikes'] = np.zeros((len(raw[episode]['pulsed_i']), params['N']), int)
         for j, i in enumerate(raw[episode]['pulsed_i']):
             np.add.at(raw[episode]['pulsed_nspikes'][j], i, 1)
