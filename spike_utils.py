@@ -16,21 +16,28 @@ def get_clean_tbounds(tstart, tstop, interval):
     return tstart, tstop
 
 
-def iterspikes(spike_i, spike_t, n, interval, tstart=None, tstop=None):
+def iterspikes(spike_i, spike_t, n, interval, tstart=None, tstop=None, dt=None):
     '''
     Iterates over `spike_i`/`spike_t` in `n` chunks of duration `interval`.
     Each iteration provides the chunk_i in the current chunk, as well as
     chunk_t relative to the start of the chunk. tstart and tstop can be used
     to exclude early/late parts of each chunk. Note that chunk_t is relative
     to the start of the returned chunk.
+    If dt is given, the decision boundaries are moved by dt/2 in order to avoid
+    quantisation artifacts.
     '''
     spike_t = ensure_unit(spike_t, second)
     tstart, tstop = get_clean_tbounds(tstart, tstop, interval)
+    offset = tstart
+    if dt is not None:
+        dt = ensure_unit(dt, second)
+        tstart -= dt/2
+        tstop -= dt/2
 
     for ipulse in range(n):
         t0 = ipulse*interval
         mask = (spike_t >= t0 + tstart) & (spike_t < t0 + tstop)
-        yield spike_i[mask], spike_t[mask] - t0 - tstart
+        yield spike_i[mask], spike_t[mask] - t0 - offset
 
 
 def bin_spikes(spike_i, spike_t, binsize=1e-3*second, N=None, tmax=None,
