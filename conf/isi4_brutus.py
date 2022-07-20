@@ -1,5 +1,7 @@
 from .isi4 import *
 
+gpuid=0
+
 fbase_brutus = '/data/felix/culture/isi4_'
 fname = fname.replace(fbase, fbase_brutus)
 netfile = netfile.replace(fbase, fbase_brutus)
