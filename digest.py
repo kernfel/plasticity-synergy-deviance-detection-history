@@ -3,6 +3,8 @@ import importlib
 from collections import defaultdict
 import warnings
 
+from matplotlib.pyplot import hist
+
 
 from brian2.only import *
 import deepdish as dd
@@ -98,14 +100,25 @@ def digest(cfg):
                                     k: np.empty(dynamic_runs_shape + hist.shape)
                                     for k in res['masked_voltage_histograms'].keys()}
                             masked_histograms[measure][idx] = hist
-                        
-    scrub_stimulated_overactivation(cfg, histograms)
-    scrub_stimulated_overactivation(cfg, masked_histograms)
+                    elif histograms is not None:
+                        sanitise_and_save_histograms(cfg, histograms, 'histograms')
+                        sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
+                        histograms = masked_histograms = None
+
+    if histograms is not None:
+        sanitise_and_save_histograms(cfg, histograms, 'histograms')
+        sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
 
     try:
         dd.io.save(cfg.digestfile.format(kind='nspikes'), nspikes)
-        dd.io.save(cfg.digestfile.format(kind='histograms'), histograms)
-        dd.io.save(cfg.digestfile.format(kind='masked_histograms'), masked_histograms)
+    except Exception as e:
+        print(e)
+    
+
+def sanitise_and_save_histograms(cfg, histograms, kind):
+    scrub_stimulated_overactivation(cfg, histograms)
+    try:
+        dd.io.save(cfg.digestfile.format(kind=kind), histograms)
     except Exception as e:
         print(e)
 
