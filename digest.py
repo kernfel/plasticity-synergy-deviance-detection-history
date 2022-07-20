@@ -64,7 +64,8 @@ def iter_runs(cfg, dynamics_only=False):
                         yield templ, net, STD, TA, iISI, isi
 
 
-def digest(cfg):
+def digest(cfg, spikes=True, hist=True, masked=True):
+    assert spikes or hist or masked
     spike_runs_shape = (cfg.N_templates, cfg.N_networks, len(cfg.STDs), len(cfg.TAs), len(cfg.ISIs), len(cfg.pairings), 2)
     dynamic_runs_shape = (min(cfg.N_templates, cfg.N_templates_with_dynamics),) + spike_runs_shape[1:] + (len(conds),)
     nspikes = {}
@@ -78,41 +79,46 @@ def digest(cfg):
             for istim, stim in enumerate((pair['S1'], pair['S2'])):
                 for icond, cond in enumerate(conds):
                     idx = templ, net, STD, TA, iISI, ipair, istim, icond
-                    spikes = res['spikes'][ipair][stim][cond]
-                    if cond not in nspikes:
-                        nspikes[cond] = np.empty(spike_runs_shape + spikes['nspikes'].shape)
-                    nspikes[cond][idx[:-1]] = spikes['nspikes']
+                    thespikes = res['spikes'][ipair][stim][cond]
+                    if spikes:
+                        if cond not in nspikes:
+                            nspikes[cond] = np.empty(spike_runs_shape + thespikes['nspikes'].shape)
+                        nspikes[cond][idx[:-1]] = thespikes['nspikes']
 
-                    if 'voltage_histograms' in res:
+                    if hist and 'voltage_histograms' in res:
                         for measure, hists in res['voltage_histograms'].items():
-                            hist = hists[ipair][stim][cond]
+                            thehist = hists[ipair][stim][cond]
                             if histograms is None:
                                 histograms = {
-                                    k: np.empty(dynamic_runs_shape + hist.shape)
+                                    k: np.empty(dynamic_runs_shape + thehist.shape)
                                     for k in list(res['voltage_histograms'].keys()) + ['p(spike)']}
-                            histograms[measure][idx] = hist
-                        histograms['p(spike)'][idx] = spikes['spike_hist']
-
-                        for measure, hists in res['masked_voltage_histograms'].items():
-                            hist = hists[ipair][stim][cond]
-                            if masked_histograms is None:
-                                masked_histograms = {
-                                    k: np.empty(dynamic_runs_shape + hist.shape)
-                                    for k in res['masked_voltage_histograms'].keys()}
-                            masked_histograms[measure][idx] = hist
+                            histograms[measure][idx] = thehist
+                        histograms['p(spike)'][idx] = thespikes['spike_hist']
                     elif histograms is not None:
                         sanitise_and_save_histograms(cfg, histograms, 'histograms')
+                        histograms = None
+
+                    if masked and 'masked_voltage_histograms' in res:
+                        for measure, hists in res['masked_voltage_histograms'].items():
+                            thehist = hists[ipair][stim][cond]
+                            if masked_histograms is None:
+                                masked_histograms = {
+                                    k: np.empty(dynamic_runs_shape + thehist.shape)
+                                    for k in res['masked_voltage_histograms'].keys()}
+                            masked_histograms[measure][idx] = thehist
+                    elif masked_histograms is not None:
                         sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
-                        histograms = masked_histograms = None
+                        masked_histograms = None
 
     if histograms is not None:
         sanitise_and_save_histograms(cfg, histograms, 'histograms')
+    if masked_histograms is not None:
         sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
-
-    try:
-        dd.io.save(cfg.digestfile.format(kind='nspikes'), nspikes)
-    except Exception as e:
-        print(e)
+    if spikes:
+        try:
+            dd.io.save(cfg.digestfile.format(kind='nspikes'), nspikes)
+        except Exception as e:
+            print(e)
     
 
 def sanitise_and_save_histograms(cfg, histograms, kind):
@@ -141,5 +147,18 @@ def scrub_stimulated_overactivation(cfg, histograms):
 
 
 if __name__ == '__main__':
+    if '-p' in sys.argv:
+        sys.argv.remove('-p')
+        piecemeal = True
+    elif '--piecemeal' in sys.argv:
+        sys.argv.remove('--piecemeal')
+        piecemeal = True
+    else:
+        piecemeal = False
     cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
-    digest(cfg)
+    if piecemeal:
+        digest(cfg, spikes=True, hist=False, masked=False)
+        digest(cfg, spikes=False, hist=True, masked=False)
+        digest(cfg, spikes=False, hist=False, masked=True)
+    else:
+        digest(cfg)
