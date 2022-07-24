@@ -84,9 +84,9 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **dev
 
 def generate_network(cfg, rng):
     params = cfg.params.copy()
-    params['ISI'] = cfg.get('stim_probe_duration', params.get('ISI', 100*ms))
+    params['ISI'] = cfg.stim_probe_duration if 'stim_probe_duration' in dir(cfg) else params.get('ISI', 100*ms)
     params['sequence_length'], params['sequence_count'] = 1, 1
-    min_frac = cfg.get('minimum_active_fraction', 0.8)
+    min_frac = cfg.minimum_active_fraction if 'minimum_active_fraction' in dir(cfg) else 0.8
     Xstim, Ystim = spatial.create_stimulus_locations(params)
     while True:
         X, Y, W, D = spatial.create_weights(params, rng)
