@@ -96,8 +96,10 @@ def generate_network(cfg, rng):
             offset = inputs.set_input_sequence(Net, [i], params, offset)
         Net.run(offset)
         spikes = readout.get_raw_spikes(Net, params, range(params['N_stimuli']))
-        sufficient_activity = [(ep['pulsed_nspikes']>0).mean() > min_frac for ep in spikes.values()]
-        if all(sufficient_activity):
+        frac = [(ep['pulsed_nspikes']>0).mean() for ep in spikes.values()]
+        sufficient_activity = all([f > min_frac for f in frac])
+        print(f'{sufficient_activity}\t{frac}')
+        if sufficient_activity:
             return X, Y, W, D, Xstim, Ystim
 
 
