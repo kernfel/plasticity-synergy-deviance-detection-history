@@ -17,4 +17,4 @@ stimuli = {key: j for j, key in enumerate('ABCDE')}
 pairings=(('A','B'), ('C','E'))
 
 contrib_cutoff = .8
-minimum_active_fraction = .8
+minimum_active_fraction = .5

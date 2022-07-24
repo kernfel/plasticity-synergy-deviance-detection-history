@@ -86,7 +86,7 @@ def generate_network(cfg, rng):
     params = cfg.params.copy()
     params['ISI'] = cfg.stim_probe_duration if 'stim_probe_duration' in dir(cfg) else params.get('ISI', 100*ms)
     params['sequence_length'], params['sequence_count'] = 1, 1
-    min_frac = cfg.minimum_active_fraction if 'minimum_active_fraction' in dir(cfg) else 0.8
+    min_frac = cfg.minimum_active_fraction if 'minimum_active_fraction' in dir(cfg) else 0.5
     Xstim, Ystim = spatial.create_stimulus_locations(params)
     while True:
         X, Y, W, D = spatial.create_weights(params, rng)
