@@ -82,9 +82,54 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **dev
     return rundata
 
 
+def generate_network(cfg, rng):
+    params = cfg.params.copy()
+    params['ISI'] = cfg.get('stim_probe_duration', params.get('ISI', 100*ms))
+    params['sequence_length'], params['sequence_count'] = 1, 1
+    min_frac = cfg.get('minimum_active_fraction', 0.8)
+    Xstim, Ystim = spatial.create_stimulus_locations(params)
+    while True:
+        X, Y, W, D = spatial.create_weights(params, rng)
+        Net = model.create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=params['ISI'] + params['settling_period'])
+        offset = 0*second
+        for i in range(params['N_stimuli']):
+            offset = inputs.set_input_sequence(Net, [i], params, offset)
+        Net.run(offset)
+        spikes = readout.get_raw_spikes(Net, params, range(params['N_stimuli']))
+        sufficient_activity = [(ep['pulsed_nspikes']>0).mean() > min_frac for ep in spikes.values()]
+        if all(sufficient_activity):
+            return X, Y, W, D
+
+
+def generate_networks(cfg, rng, start_at):
+    if start_at.get('templ', 0) > 0:
+        return
+    warned_about_premades = False
+    for net in range(cfg.N_networks):
+        if net < start_at.get('net', 0):
+            continue
+        elif start_at.pop('newnet', True):
+            if 'nets' in dir(cfg) and net in cfg.nets:
+                res = dd.io.load(cfg.nets[net])
+                X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
+                if not warned_about_premades:
+                    print(f'Note: Config-supplied networks are not checked for response magnitude.')
+                    warned_about_premades = True
+            else:
+                X, Y, W, D = generate_network(cfg, rng)
+            
+            stimulated_neurons = spatial.get_stimulated(X, Y, Xstim, Ystim, cfg.params)
+            try:
+                dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D, stimulated_neurons=stimulated_neurons))
+            except Exception as e:
+                print(e)
+
+
 if __name__ == '__main__':
     cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
+    rng = np.random.default_rng()
     start_at = cfg.start_at.copy() if 'start_at' in dir(cfg) else {}
+    generate_networks(cfg, rng, start_at)
 
     if 'gpuid' in dir(cfg):
         working_dir = f'tmp/GPU{cfg.gpuid}'
@@ -101,8 +146,6 @@ if __name__ == '__main__':
     os.makedirs(working_dir, exist_ok=True)
     set_device(dev, **device_args)
     runit = functools.partial(runit, cfg, **device_args)
-
-    rng = np.random.default_rng()
 
     Xstim, Ystim = spatial.create_stimulus_locations(cfg.params)
 
@@ -132,20 +175,11 @@ if __name__ == '__main__':
                 continue
             else:
                 start_at.pop('net', 0)
-            if templ == 0 and start_at.pop('newnet', True):
-                if 'nets' in dir(cfg) and net in cfg.nets:
-                    res = dd.io.load(cfg.nets[net])
-                    X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
-                else:
-                    X, Y, W, D = spatial.create_weights(cfg.params, rng)
-                try:
-                    stimulated_neurons = spatial.get_stimulated(X, Y, Xstim, Ystim, cfg.params)
-                    dd.io.save(cfg.netfile.format(net=net), dict(X=X, Y=Y, W=W, D=D, stimulated_neurons=stimulated_neurons))
-                except Exception as e:
-                    print(e)
-            else:
+            try:
                 res = dd.io.load(cfg.netfile.format(net=net))
-                X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
+            except Exception as e:
+                print(e)
+            X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
             for STD in cfg.STDs:
                 for TA in cfg.TAs:
                     if STD < start_at.get('STD', 0) or TA < start_at.get('TA', 0):
