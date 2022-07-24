@@ -98,7 +98,7 @@ def generate_network(cfg, rng):
         spikes = readout.get_raw_spikes(Net, params, range(params['N_stimuli']))
         sufficient_activity = [(ep['pulsed_nspikes']>0).mean() > min_frac for ep in spikes.values()]
         if all(sufficient_activity):
-            return X, Y, W, D
+            return X, Y, W, D, Xstim, Ystim
 
 
 def generate_networks(cfg, rng, start_at):
@@ -116,7 +116,7 @@ def generate_networks(cfg, rng, start_at):
                     print(f'Note: Config-supplied networks are not checked for response magnitude.')
                     warned_about_premades = True
             else:
-                X, Y, W, D = generate_network(cfg, rng)
+                X, Y, W, D, Xstim, Ystim = generate_network(cfg, rng)
             
             stimulated_neurons = spatial.get_stimulated(X, Y, Xstim, Ystim, cfg.params)
             try:
