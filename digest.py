@@ -4,6 +4,7 @@ from collections import defaultdict
 import warnings
 
 from matplotlib.pyplot import hist
+from numpy.lib.format import open_memmap
 
 
 from brian2.only import *
@@ -82,7 +83,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                     thespikes = res['spikes'][ipair][stim][cond]
                     if spikes:
                         if cond not in nspikes:
-                            nspikes[cond] = np.lib.format.open_memmap(
+                            nspikes[cond] = open_memmap(
                                 cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=int, mode='w+',
                                 shape=spike_runs_shape + thespikes['nspikes'].shape)
                         nspikes[cond][idx[:-1]] = thespikes['nspikes']
@@ -92,7 +93,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                             thehist = hists[ipair][stim][cond]
                             if histograms is None:
                                 histograms = {
-                                    k: np.lib.format.open_memmap(
+                                    k: open_memmap(
                                         cfg.digestfile.format(kind=f'histograms-{k}') + '.npy', dtype=float, mode='w+',
                                         shape=dynamic_runs_shape + thehist.shape)
                                     for k in list(res['voltage_histograms'].keys()) + ['pspike']}
@@ -104,7 +105,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                             thehist = hists[ipair][stim][cond]
                             if masked_histograms is None:
                                 masked_histograms = {
-                                    k: np.lib.format.open_memmap(
+                                    k: open_memmap(
                                         cfg.digestfile.format(kind=f'masked_histograms-{k}') + '.npy', dtype=float, mode='w+',
                                         shape=dynamic_runs_shape + thehist.shape)
                                     for k in res['masked_voltage_histograms'].keys()}
@@ -117,7 +118,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
 
                     cond = 'nontarget_msc'
                     if cond not in nspikes:
-                        nspikes[cond] = np.lib.format.open_memmap(
+                        nspikes[cond] = open_memmap(
                             cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=int, mode='w+',
                             shape=spike_runs_shape + nontarget_nspikes.shape)
                     nspikes[cond][idx[:-1]] = nontarget_nspikes
