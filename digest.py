@@ -82,7 +82,9 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                     thespikes = res['spikes'][ipair][stim][cond]
                     if spikes:
                         if cond not in nspikes:
-                            nspikes[cond] = np.empty(spike_runs_shape + thespikes['nspikes'].shape)
+                            nspikes[cond] = np.lib.format.open_memmap(
+                                cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=int, mode='w+',
+                                shape=spike_runs_shape + thespikes['nspikes'].shape)
                         nspikes[cond][idx[:-1]] = thespikes['nspikes']
 
                     if hist and 'voltage_histograms' in res:
@@ -90,25 +92,23 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                             thehist = hists[ipair][stim][cond]
                             if histograms is None:
                                 histograms = {
-                                    k: np.empty(dynamic_runs_shape + thehist.shape)
-                                    for k in list(res['voltage_histograms'].keys()) + ['p(spike)']}
+                                    k: np.lib.format.open_memmap(
+                                        cfg.digestfile.format(kind=f'histograms-{k}') + '.npy', dtype=float, mode='w+',
+                                        shape=dynamic_runs_shape + thehist.shape)
+                                    for k in list(res['voltage_histograms'].keys()) + ['pspike']}
                             histograms[measure][idx] = thehist
-                        histograms['p(spike)'][idx] = thespikes['spike_hist']
-                    elif histograms is not None:
-                        sanitise_and_save_histograms(cfg, histograms, 'histograms')
-                        histograms = None
+                        histograms['pspike'][idx] = thespikes['spike_hist']
 
                     if masked and 'masked_voltage_histograms' in res:
                         for measure, hists in res['masked_voltage_histograms'].items():
                             thehist = hists[ipair][stim][cond]
                             if masked_histograms is None:
                                 masked_histograms = {
-                                    k: np.empty(dynamic_runs_shape + thehist.shape)
+                                    k: np.lib.format.open_memmap(
+                                        cfg.digestfile.format(kind=f'masked_histograms-{k}') + '.npy', dtype=float, mode='w+',
+                                        shape=dynamic_runs_shape + thehist.shape)
                                     for k in res['masked_voltage_histograms'].keys()}
                             masked_histograms[measure][idx] = thehist
-                    elif masked_histograms is not None:
-                        sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
-                        masked_histograms = None
                 
                 if spikes:
                     episode = pair['msc'][stim]
@@ -117,28 +117,21 @@ def digest(cfg, spikes=True, hist=True, masked=True):
 
                     cond = 'nontarget_msc'
                     if cond not in nspikes:
-                        nspikes[cond] = np.empty(spike_runs_shape + nontarget_nspikes.shape)
+                        nspikes[cond] = np.lib.format.open_memmap(
+                            cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=int, mode='w+',
+                            shape=spike_runs_shape + nontarget_nspikes.shape)
                     nspikes[cond][idx[:-1]] = nontarget_nspikes
 
     if histograms is not None:
-        sanitise_and_save_histograms(cfg, histograms, 'histograms')
+        scrub_stimulated_overactivation(cfg, histograms)
     if masked_histograms is not None:
-        sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
+        scrub_stimulated_overactivation(cfg, masked_histograms)
     if spikes:
         try:
             dd.io.save(cfg.digestfile.format(kind='nspikes-pulsemean'), {cond: n.mean(-2) for cond, n in nspikes.items()})
             dd.io.save(cfg.digestfile.format(kind='nspikes-neuronmean'), {cond: n.mean(-1) for cond, n in nspikes.items()})
-            dd.io.save(cfg.digestfile.format(kind='nspikes'), nspikes)
         except Exception as e:
             print(e)
-    
-
-def sanitise_and_save_histograms(cfg, histograms, kind):
-    scrub_stimulated_overactivation(cfg, histograms)
-    try:
-        dd.io.save(cfg.digestfile.format(kind=kind), histograms)
-    except Exception as e:
-        print(e)
 
 
 def scrub_stimulated_overactivation(cfg, histograms):
