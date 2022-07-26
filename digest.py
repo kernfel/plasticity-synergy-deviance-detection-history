@@ -71,6 +71,8 @@ def digest(cfg, spikes=True, hist=True, masked=True):
     dynamic_runs_shape = (min(cfg.N_templates, cfg.N_templates_with_dynamics),) + spike_runs_shape[1:] + (len(conds),)
     nspikes = {}
     histograms, masked_histograms = None, None
+    log_nbins = np.log2(cfg.params['ISI']/cfg.params['dt'])
+    nspikes_dtype = np.int8 if log_nbins < 7 else np.int16 if log_nbins < 15 else np.int32 if log_nbins < 31 else np.int64
     for templ, net, STD, TA, iISI, isi in iter_runs(cfg):
         try:
             res = dd.io.load(cfg.fname.format(**locals()))
@@ -84,7 +86,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                     if spikes:
                         if cond not in nspikes:
                             nspikes[cond] = open_memmap(
-                                cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=int, mode='w+',
+                                cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=nspikes_dtype, mode='w+',
                                 shape=spike_runs_shape + thespikes['nspikes'].shape)
                         nspikes[cond][idx[:-1]] = thespikes['nspikes']
 
@@ -119,7 +121,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                     cond = 'nontarget_msc'
                     if cond not in nspikes:
                         nspikes[cond] = open_memmap(
-                            cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=int, mode='w+',
+                            cfg.digestfile.format(kind=f'nspikes-{cond}') + '.npy', dtype=nspikes_dtype, mode='w+',
                             shape=spike_runs_shape + nontarget_nspikes.shape)
                     nspikes[cond][idx[:-1]] = nontarget_nspikes
 
