@@ -109,6 +109,16 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                     elif masked_histograms is not None:
                         sanitise_and_save_histograms(cfg, masked_histograms, 'masked_histograms')
                         masked_histograms = None
+                
+                if spikes:
+                    episode = pair['msc'][stim]
+                    pulse_mask = res['sequences'][episode] != res['stimuli'][stim]  # Non-target MSC pulses
+                    nontarget_nspikes = res['msc_spikes'][episode]['pulsed_nspikes'][pulse_mask]
+
+                    cond = 'nontarget_msc'
+                    if cond not in nspikes:
+                        nspikes[cond] = np.empty(spike_runs_shape + nontarget_nspikes.shape)
+                    nspikes[cond][idx[:-1]] = nontarget_nspikes
 
     if histograms is not None:
         sanitise_and_save_histograms(cfg, histograms, 'histograms')
