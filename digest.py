@@ -129,8 +129,8 @@ def digest(cfg, spikes=True, hist=True, masked=True):
         scrub_stimulated_overactivation(cfg, masked_histograms)
     if spikes:
         try:
-            dd.io.save(cfg.digestfile.format(kind='nspikes-pulsemean'), {cond: n.mean(-2) for cond, n in nspikes.items()})
-            dd.io.save(cfg.digestfile.format(kind='nspikes-neuronmean'), {cond: n.mean(-1) for cond, n in nspikes.items()})
+            dd.io.save(cfg.digestfile.format(kind='nspikes-pulsemean') + '.h5', {cond: n.mean(-2) for cond, n in nspikes.items()})
+            dd.io.save(cfg.digestfile.format(kind='nspikes-neuronmean') + '.h5', {cond: n.mean(-1) for cond, n in nspikes.items()})
         except Exception as e:
             print(e)
 
