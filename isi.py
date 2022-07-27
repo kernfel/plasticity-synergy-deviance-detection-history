@@ -142,7 +142,14 @@ if __name__ == '__main__':
     else:
         working_dir = 'tmp/CPP'
         dev = 'cpp_standalone'
-        prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() - 2
+        if 'mp_cores' in dir(cfg):
+            ncores = cfg.mp_cores
+        else:
+            ncores = -2
+        if ncores < 0:
+            prefs.devices.cpp_standalone.openmp_threads = mp.cpu_count() + ncores
+        elif ncores > 0:
+            prefs.devices.cpp_standalone.openmp_threads = ncores
         runit = run_cpu
     device_args = dict(directory=working_dir)
     os.makedirs(working_dir, exist_ok=True)
