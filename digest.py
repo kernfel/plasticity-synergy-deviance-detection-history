@@ -65,6 +65,18 @@ def iter_runs(cfg, dynamics_only=False):
                         yield templ, net, STD, TA, iISI, isi
 
 
+def get_digest_output(cfg, kind):
+    if kind in ('nspikes-pulsemean', 'nspikes-neuronmean'):
+        return dd.io.load(cfg.digestfile.format(kind=kind) + '.h5')
+    elif kind == 'nspikes':
+        keys = conds + ('nontarget_msc',)
+    elif kind == 'histograms':
+        keys = voltage_measures + ('pspike',)
+    elif kind == 'masked_histograms':
+        keys = voltage_measures + ('weight')
+    return {key: open_memmap(cfg.digestfile.format(kind=f'{kind}-{key}') + '.npy', 'c') for key in keys}
+
+
 def digest(cfg, spikes=True, hist=True, masked=True):
     assert spikes or hist or masked
     spike_runs_shape = (cfg.N_templates, cfg.N_networks, len(cfg.STDs), len(cfg.TAs), len(cfg.ISIs), len(cfg.pairings), 2)
