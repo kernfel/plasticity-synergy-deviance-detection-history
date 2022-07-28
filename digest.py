@@ -73,7 +73,7 @@ def get_digest_output(cfg, kind):
     elif kind == 'histograms':
         keys = voltage_measures + ('pspike',)
     elif kind == 'masked_histograms':
-        keys = voltage_measures + ('weight')
+        keys = voltage_measures + ('weight',)
     return {key: open_memmap(cfg.digestfile.format(kind=f'{kind}-{key}') + '.npy', 'c') for key in keys}
 
 
