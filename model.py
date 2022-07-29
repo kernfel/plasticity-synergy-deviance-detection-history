@@ -124,41 +124,52 @@ def create_surrogate(Net, Group, spikes, clock, suffix):
     return Surrogate, Enforcer
 
 
-def create_excitatory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extras, static_delay, suffix):
-    excitatory_synapse = '''
-        dxr/dt = (1-xr)/tau_rec : 1 (event-driven)
-        w : 1
-    '''
-    excitatory_on_pre = '''
-        g_exc_post += U*xr*w
-        xr -= U*xr
-    '''
-    if 'u' in extras:
-        excitatory_on_pre += '''
-        g_exc_nox_post += U*w
+def make_exc_synapse(pre, post, iPre, iPost, w, params, with_u=False, **kwargs):
+    plastic = params['tau_rec'] > 0*ms
+    eqn = '''w : 1'''
+    if plastic:
+        eqn += '''
+    dxr/dt = (1-xr)/tau_rec : 1 (event-driven)
         '''
+        onpre = '''
+    g_exc_post += U*xr*w
+    xr -= U*xr
+        '''
+        if with_u:
+            onpre += '''
+    g_exc_nox_post += U*w
+            '''
+    elif not plastic:
+        onpre = '''
+    g_exc_post += U*w
+        '''
+    
+    syn = Synapses(pre, post, eqn, on_pre=onpre, method='exact', namespace=params, **kwargs)
+    syn.connect(i=iPre, j=iPost)
+    syn.w = w
+    syn.add_attribute('dynamic_variables')
+    syn.add_attribute('dynamic_variable_initial')
+    if plastic:
+        syn.xr = 1
+        syn.dynamic_variables = ['xr']
+        syn.dynamic_variable_initial = [1]
+    else:
+        syn.dynamic_variables = []
+        syn.dynamic_variable_initial = []
+
+    return syn
+
+
+def create_excitatory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extras, static_delay, suffix):
     iPre_ee, iPost_ee = np.nonzero(~np.isnan(W[:params['N_exc'], :params['N_exc']]))
+    w = W[iPre_ee, iPost_ee].ravel()
+    Syn_EE = make_exc_synapse(presyn, Exc, iPre_ee, iPost_ee, w, params, with_u='u' in extras,
+                              name='EE'+suffix, clock=clock, delay=static_delay)
+    
     iPre_ei, iPost_ei = np.nonzero(~np.isnan(W[:params['N_exc'], params['N_exc']:]))
-
-    Syn_EE = Synapses(presyn, Exc, excitatory_synapse, on_pre=excitatory_on_pre, method='exact',
-                      namespace=params, name='EE'+suffix, clock=clock, delay=static_delay)
-    Syn_EE.connect(i=iPre_ee, j=iPost_ee)
-    Syn_EE.w = W[iPre_ee, iPost_ee].ravel()
-    Syn_EE.xr = 1
-    Syn_EE.add_attribute('dynamic_variables')
-    Syn_EE.add_attribute('dynamic_variable_initial')
-    Syn_EE.dynamic_variables = ['xr']
-    Syn_EE.dynamic_variable_initial = [1]
-
-    Syn_EI = Synapses(presyn, Inh, excitatory_synapse, on_pre=excitatory_on_pre, method='exact',
-                      namespace=params, name='EI'+suffix, clock=clock, delay=static_delay)
-    Syn_EI.connect(i=iPre_ei, j=iPost_ei)
-    Syn_EI.w = W[iPre_ei, iPost_ei + params['N_exc']].ravel()
-    Syn_EI.xr = 1
-    Syn_EI.add_attribute('dynamic_variables')
-    Syn_EI.add_attribute('dynamic_variable_initial')
-    Syn_EI.dynamic_variables = ['xr']
-    Syn_EI.dynamic_variable_initial = [1]
+    w = W[iPre_ei, iPost_ei + params['N_exc']].ravel()
+    Syn_EI = make_exc_synapse(presyn, Inh, iPre_ei, iPost_ei, w, params, with_u='u' in extras,
+                              name='EI'+suffix, clock=clock, delay=static_delay)
 
     Net.add(Syn_EE, Syn_EI)
     return Syn_EE, Syn_EI
