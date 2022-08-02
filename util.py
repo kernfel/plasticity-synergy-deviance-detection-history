@@ -51,3 +51,12 @@ class Tree(defaultdict):
     
     def asdict(self):
         return {k: v.asdict() if isinstance(v, Tree) else v for k, v in self.items()}
+
+
+def isiterable(obj):
+    try:
+        iter(obj)
+    except TypeError:
+        return False
+    else:
+        return True
