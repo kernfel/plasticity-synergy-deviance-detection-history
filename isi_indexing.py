@@ -23,7 +23,7 @@ def getindex(cfg, **kwargs):
             icond = conds.index(kwargs['cond'])
     else:
         icond = kwargs.get('icond', slice(None))
-    return (
+    idx = (
         kwargs.get('templ', slice(None)),
         kwargs.get('net', slice(None)),
         kwargs.get('STD', slice(None)),
@@ -32,6 +32,14 @@ def getindex(cfg, **kwargs):
         kwargs.get('ipair', slice(None)),
         kwargs.get('istim', slice(None)),
         icond)
+    iterable_idx = sum([isiterable(i) for i in idx])
+    slice_idx = sum([isinstance(i, slice) for i in idx])
+    assert iterable_idx==0 or slice_idx==0, 'Mixing slices and lists-of-indices is not supported.'
+    # ... because the order of indexing is inconsistent in numpy. Example:
+    #  np.arange(12).reshape(1,3,4)[0, :, (0,1,2,3)].shape  # Received: (4, 3) ; Expected: (3, 4)
+    #  np.arange(12).reshape(1,3,4)[0, :, :].shape  # Received: (3, 4) as expected
+    # See: https://github.com/numpy/numpy/pull/6256 https://github.com/numpy/numpy/pull/6075 
+    return idx
 
 
 def getaxis(tag : str | tuple | list, **kwargs):
