@@ -13,7 +13,7 @@ def set_input_sequence(Net, sequence, params, offset=0*second):
     return t[-1] + params['ISI']
 
 
-def create_oddball(Net, params, A, B, rng=None, offset=0*second):
+def create_oddball(Net, params, A, B, rng : np.random.Generator, offset=0*second):
     sequence = np.tile([A] * (params['sequence_length']-1) + [B], params['sequence_count'])
     if params.get('fully_random_oddball', False):
         rng.shuffle(sequence)
