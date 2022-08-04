@@ -17,7 +17,10 @@ def create_oddball(Net, params, A, B, rng=None, offset=0*second):
     sequence = np.tile([A] * (params['sequence_length']-1) + [B], params['sequence_count'])
     if params.get('fully_random_oddball', False):
         rng.shuffle(sequence)
-    return sequence, set_input_sequence(Net, sequence, params, offset=offset)
+    if Net is None:
+        return sequence
+    else:
+        return sequence, set_input_sequence(Net, sequence, params, offset=offset)
 
 
 def create_MSC(Net, params, rng : np.random.Generator, offset=0*second):
@@ -27,7 +30,10 @@ def create_MSC(Net, params, rng : np.random.Generator, offset=0*second):
     rng.shuffle(sequence)
     if not params.get('fully_random_msc', False):
         sequence = np.tile(sequence, params['sequence_count'])
-    return sequence, set_input_sequence(Net, sequence, params, offset=offset)
+    if Net is None:
+        return sequence
+    else:
+        return sequence, set_input_sequence(Net, sequence, params, offset=offset)
 
 
 def get_episode_duration(params):
