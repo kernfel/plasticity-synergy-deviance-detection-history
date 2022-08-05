@@ -167,11 +167,11 @@ if __name__ == '__main__':
             or start_at.get('TA', cfg.TAs[0]) != cfg.TAs[0]
             or start_at.get('isi', cfg.ISIs[0]) != cfg.ISIs[0]):
         templ = start_at.get('templ', 0)
-        templates[templ] = dd.io.load(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
-        templates[templ].pop('spikes', None)
-        templates[templ].pop('dynamics', None)
-        templates[templ].pop('voltage_histograms', None)
-        templates[templ].pop('masked_voltage_histograms', None)
+        preset = dd.io.load(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
+        for key in preset.keys():
+            if key not in templates[templ]:
+                preset.pop(key)
+        templates[templ] = preset
 
     for templ, template in enumerate(templates):
         if templ < start_at.get('templ', 0):
