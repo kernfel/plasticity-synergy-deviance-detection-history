@@ -30,10 +30,14 @@ def grouped_bars(series, xlabels, slabels, ax, w0=0.7):
     ax.legend()
 
 
-def plot_pulse_hist(histograms, selection, tmax, dt, figsize=(10,15), grid=False, cmap='PiYG', vmin=None, vmax=None, symmetric=True, cscale=False):
+def plot_pulse_hist(histograms, index_N, index_t, dt, figsize=(10,15), grid=False, cmap='PiYG', vmin=None, vmax=None, symmetric=True, cscale=False):
+    if type(index_t) == int:
+        assert len(index_N.shape) == 1
+        index_N = np.repeat(index_N.reshape(-1,1), index_t, 1)
+        index_t = np.repeat(np.arange(index_t).reshape(1,-1), len(index_N), 0)
     histograms = np.asarray(histograms)
-    x = np.arange(tmax+1)*dt/msecond
-    y = np.arange(len(selection)+1)
+    x = np.arange(index_t.shape[-1] + 1)*dt/msecond
+    y = np.arange(len(index_N)+1)
     if symmetric:
         if vmax is None:
             vmax = np.nanmax(np.abs(histograms))
@@ -49,7 +53,7 @@ def plot_pulse_hist(histograms, selection, tmax, dt, figsize=(10,15), grid=False
     axs = axs[0]
     orders = []
     for ax, hist in zip(axs, histograms):
-        h = hist[selection, :tmax]
+        h = hist[index_N, index_t]
         order = 0
         if cscale:
             hmax, hmin = np.nanmax(h), np.nanmin(h)
