@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 
 from digest import conds
 from util import isiterable
@@ -116,3 +117,33 @@ def hist_labels(cfg, hists, **kwargs):
 
 def nspikes_labels(cfg, **kwargs):
     return getlabels(cfg, cfg.N_templates, False, **kwargs)
+
+
+def get_onset_ordering(cfg, pspike, limit=None, filter=None, shift=False, **kwargs):
+    if len(pspike.shape) > 3:
+        pspike = hist_view(cfg, pspike, **kwargs)
+    elif len(pspike.shape) == 2:
+        pspike = pspike[None, :, :]
+    hist_sum = pspike.sum(0)
+    first_index = np.sum(np.cumsum(hist_sum, axis=1) == 0, axis=1)
+    safe_first_index = first_index.copy()
+    safe_first_index[first_index >= hist_sum.shape[1]] = 0
+    first_intensity = hist_sum[np.arange(hist_sum.shape[0]), safe_first_index]
+    
+    onset_sort = np.lexsort((-first_intensity, first_index))
+    order = onset_sort[limit] if type(limit) == slice else onset_sort[:limit]
+    if filter is not None:
+        order = order[np.isin(order, filter)]
+    tmax = np.flatnonzero(hist_sum[order].sum(axis=0))[-1] + 1
+
+    if shift:
+        order = order[first_index[order] < tmax]
+        tmax = min(tmax, pspike.shape[-1] - np.max(first_index[order]))
+    
+    index_N = np.repeat(order.reshape(-1,1), tmax, 1)
+    index_t = np.repeat(np.arange(tmax).reshape(1,-1), len(order), 0)
+    
+    if shift:
+        index_t += first_index[order].reshape(-1, 1)
+
+    return index_N, index_t
