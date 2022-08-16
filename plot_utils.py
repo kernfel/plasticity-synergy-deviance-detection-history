@@ -4,6 +4,15 @@ from matplotlib.colors import LinearSegmentedColormap
 from brian2.units import msecond
 
 
+colors = {
+    'std': 'k',
+    'dev': 'r',
+    'msc': 'b',
+    'Depression': '#9b19f5',
+    'Threshold': 'C2'
+}
+
+
 # From http://www.ccctool.com/html_v_0_9_0_3/CCC_Tool/cccTool.html
 ccc_divergent = LinearSegmentedColormap.from_list(
     'ccc_divergent', list(zip([0, .16, .35, .5, .62, .8, 1],
