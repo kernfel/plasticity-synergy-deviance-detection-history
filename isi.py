@@ -127,12 +127,7 @@ def generate_networks(cfg, rng, start_at):
                 print(e)
 
 
-if __name__ == '__main__':
-    cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
-    rng = np.random.default_rng()
-    start_at = cfg.start_at.copy() if 'start_at' in dir(cfg) else {}
-    generate_networks(cfg, rng, start_at)
-
+def set_run_func(cfg):
     if 'gpuid' in dir(cfg):
         working_dir = f'tmp/GPU{cfg.gpuid}'
         dev = 'genn'
@@ -154,7 +149,16 @@ if __name__ == '__main__':
     device_args = dict(directory=working_dir)
     os.makedirs(working_dir, exist_ok=True)
     set_device(dev, **device_args)
-    runit = functools.partial(runit, cfg, **device_args)
+    return functools.partial(runit, cfg, **device_args), working_dir
+
+
+if __name__ == '__main__':
+    cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
+    rng = np.random.default_rng()
+    start_at = cfg.start_at.copy() if 'start_at' in dir(cfg) else {}
+    generate_networks(cfg, rng, start_at)
+
+    runit, working_dir = set_run_func(cfg)
 
     Xstim, Ystim = spatial.create_stimulus_locations(cfg.params)
 
