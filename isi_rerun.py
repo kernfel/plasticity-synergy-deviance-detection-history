@@ -21,8 +21,9 @@ if __name__ == '__main__':
     cfg = importlib.import_module('.'.join(sys.argv[1].split('.')[0].split('/')))
     rng = np.random.default_rng()
 
+    templ=0
     try:
-        template = dd.io.load(cfg.fname.format(templ=0, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
+        template = dd.io.load(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
         for key in preset.keys():
             if key not in templates[templ]:
                 preset.pop(key)
@@ -44,7 +45,8 @@ if __name__ == '__main__':
     Xstim, Ystim = spatial.create_stimulus_locations(cfg.params)
 
     mod_params = {**cfg.params, 'ISI': isi*ms}
-    rundata = runit(template, True, True, True, mod_params, X, Y, Xstim, Ystim, W, D)
+    STD = TA = 1
+    rundata = runit(template, True, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D)
     rundata['voltage_histograms'], rundata['masked_voltage_histograms'] = get_voltage_histograms(mod_params, rundata)
 
     try:
