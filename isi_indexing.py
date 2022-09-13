@@ -119,7 +119,7 @@ def nspikes_labels(cfg, **kwargs):
     return getlabels(cfg, cfg.N_templates, False, **kwargs)
 
 
-def get_onset_ordering(cfg, pspike, limit=None, filter=None, shift=False, **kwargs):
+def get_onset_ordering(cfg, pspike, limit=None, filter=None, shift=False, tmax=None, **kwargs):
     if len(pspike.shape) > 3:
         pspike = hist_view(cfg, pspike, **kwargs)
     elif len(pspike.shape) == 2:
@@ -134,7 +134,7 @@ def get_onset_ordering(cfg, pspike, limit=None, filter=None, shift=False, **kwar
     order = onset_sort[limit] if type(limit) == slice else onset_sort[:limit]
     if filter is not None:
         order = order[np.isin(order, filter)]
-    tmax = np.flatnonzero(hist_sum[order].sum(axis=0))[-1] + 1
+    tmax = tmax or np.flatnonzero(hist_sum[order].sum(axis=0))[-1] + 1
 
     if shift:
         order = order[first_index[order] < tmax]
