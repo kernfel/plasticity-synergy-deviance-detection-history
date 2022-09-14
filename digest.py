@@ -15,7 +15,7 @@ from util import Tree
 
 
 conds = ('std', 'msc', 'dev')
-voltage_measures = ('Activity', 'Depression', 'Threshold')
+voltage_measures = ('Activity', 'Depression', 'Threshold', 'Synapses')
 
 
 def get_voltages(params, dynamics, overflow=None):
@@ -26,6 +26,7 @@ def get_voltages(params, dynamics, overflow=None):
     depression = dynamics['u'] - dynamics['v']
     threshold = dynamics['th_adapt']
     activity = dynamics['u'] - params['v_threshold']/unit
+    synapses = dynamics['vsyn'] - depression
     if overflow == 'max':
         activity = np.maximum(activity, threshold+depression)
     elif overflow is not None:
@@ -33,7 +34,8 @@ def get_voltages(params, dynamics, overflow=None):
     return {
         'Activity': activity*factor,
         'Depression': depression*factor,
-        'Threshold': threshold*factor}
+        'Threshold': threshold*factor,
+        'Synapses': synapses}
 
 
 def get_voltage_histograms(params, rundata, overflow=None):
