@@ -253,6 +253,7 @@ def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
     Net = Network()
     defaultclock.dt = params['dt']
     clock = defaultclock
+    extras = extras if state_vars is None else extras + tuple(state_vars)
     Exc = create_excitatory(Net, X, Y, params, clock, extras, bool(surrogate), suffix)
     Inh = create_inhibitory(Net, X, Y, params, clock, extras, bool(surrogate), suffix)
     if surrogate:
