@@ -19,6 +19,7 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     '''
     threshold = 'v > v_threshold'
     resets = {}
+    dynamic_variables = {'v': params['voltage_init'], 'g_exc': 0, 'g_inh': 0, 'g_input': 0}
     if params['th_ampl'] != 0*mV and params['th_tau'] > 0*ms:
         extras = extras + ('th_adapt',)
     if 'th_adapt' in extras:
@@ -26,26 +27,32 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
         '''
         threshold = 'v > v_threshold + th_adapt'
+        dynamic_variables['th_adapt'] = '0 * volt'
     if 'xr' in extras:
         eqn += '''
         dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
         '''
+        dynamic_variables['synaptic_xr'] = 1
     if 'u' in extras:
         eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
         utmp = {vtmp.format(v='u').replace('g_exc', 'g_exc_nox')} : volt
         du/dt = {dvdt.format(v='u', tmp='utmp')} : volt
         '''
+        dynamic_variables['u'] = params['voltage_init']
+        dynamic_variables['g_exc_nox'] = 0
     if 'vsyn' in extras:
         eqn += f'''
         dvsyn/dt = {dvsyndt.format(v='vsyn', tmp='vtmp')} : volt
         '''
+        dynamic_variables['vsyn'] = '0 * volt'
     if enforced_spikes:
         eqn += '''
         spike_enforcer : 1
         '''
         threshold = 'spike_enforcer > 0'
         resets['spike_enforcer'] = '= 0'
+        dynamic_variables['spike_enforcer'] = 0
         
 
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
@@ -53,26 +60,9 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
                     method='euler', namespace=params, name='Exc'+suffix, clock=clock)
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
     Exc.add_attribute('dynamic_variables')
-    Exc.add_attribute('dynamic_variable_initial')
-    Exc.dynamic_variables = ['v', 'g_exc', 'g_inh', 'g_input']
-    Exc.dynamic_variable_initial = [params['voltage_init'], 0, 0, 0]
-    if 'th_adapt' in extras:
-        Exc.dynamic_variables.append('th_adapt')
-        Exc.dynamic_variable_initial.append('0 * volt')
-    if 'xr' in extras:
-        Exc.dynamic_variables.append('synaptic_xr')
-        Exc.dynamic_variable_initial.append(1)
-    if 'u' in extras:
-        Exc.dynamic_variables.extend(('g_exc_nox', 'u'))
-        Exc.dynamic_variable_initial.extend((0, params['voltage_init']))
-    if 'vsyn' in extras:
-        Exc.dynamic_variables.append('vsyn')
-        Exc.dynamic_variable_initial.append('0*volt')
-    if enforced_spikes:
-        Exc.dynamic_variables.append('spike_enforcer')
-        Exc.dynamic_variable_initial.append(0)
+    Exc.dynamic_variables = dynamic_variables
     
-    for var, value in zip(Exc.dynamic_variables, Exc.dynamic_variable_initial):
+    for var, value in dynamic_variables.items():
         setattr(Exc, var, value)
 
     Net.add(Exc)
@@ -92,17 +82,21 @@ def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     '''
     threshold = 'v > v_threshold'
     resets = {}
+    dynamic_variables = {'v': params['voltage_init'], 'g_exc': 0, 'g_inh': 0, 'g_input': 0}
     if 'u' in extras:
         eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
         du/dt = {dvdt.replace('V','u')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
         '''
+        dynamic_variables['u'] = params['voltage_init']
+        dynamic_variables['g_exc_nox'] = 0
     if enforced_spikes:
         eqn += '''
         spike_enforcer : 1
         '''
         threshold = 'spike_enforcer > 0'
         resets['spike_enforcer'] = '= 0'
+        dynamic_variables['spike_enforcer'] = 0
     
 
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
@@ -110,17 +104,9 @@ def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
                     method='euler', namespace=params, name='Inh'+suffix, clock=clock)
     Inh.x, Inh.y = X[params['N_exc']:], Y[params['N_exc']:]
     Inh.add_attribute('dynamic_variables')
-    Inh.add_attribute('dynamic_variable_initial')
-    Inh.dynamic_variables = ['v', 'g_exc', 'g_inh', 'g_input']
-    Inh.dynamic_variable_initial = [params['voltage_init'], 0, 0, 0]
-    if 'u' in extras:
-        Inh.dynamic_variables.extend(('g_exc_nox', 'u'))
-        Inh.dynamic_variable_initial.extend((0, params['voltage_init']))
-    if enforced_spikes:
-        Inh.dynamic_variables.append('spike_enforcer')
-        Inh.dynamic_variable_initial.append(0)
+    Inh.dynamic_variables = dynamic_variables
     
-    for var, value in zip(Inh.dynamic_variables, Inh.dynamic_variable_initial):
+    for var, value in dynamic_variables.items():
         setattr(Inh, var, value)
 
     Net.add(Inh)
@@ -138,7 +124,9 @@ def create_surrogate(Net, Group, spikes, clock, suffix):
 def make_exc_synapse(pre, post, iPre, iPost, w, params, with_u=False, **kwargs):
     plastic = params['tau_rec'] > 0*ms
     eqn = '''w : 1'''
+    dynamic_variables = {}
     if plastic:
+        dynamic_variables['xr'] = 1
         eqn += '''
     dxr/dt = (1-xr)/tau_rec : 1 (event-driven)
         '''
@@ -159,14 +147,9 @@ def make_exc_synapse(pre, post, iPre, iPost, w, params, with_u=False, **kwargs):
     syn.connect(i=iPre, j=iPost)
     syn.w = w
     syn.add_attribute('dynamic_variables')
-    syn.add_attribute('dynamic_variable_initial')
-    if plastic:
-        syn.xr = 1
-        syn.dynamic_variables = ['xr']
-        syn.dynamic_variable_initial = [1]
-    else:
-        syn.dynamic_variables = []
-        syn.dynamic_variable_initial = []
+    syn.dynamic_variables = dynamic_variables
+    for var, value in dynamic_variables.items():
+        setattr(syn, var, value)
 
     return syn
 
@@ -238,7 +221,7 @@ def create_statemonitors(Net, dt, variables, when, suffix):
     clock = Clock(dt)
     for obj in Net:
         if hasattr(obj, 'dynamic_variables'):
-            varnames = [var for var in obj.dynamic_variables if variables is None or var in variables]
+            varnames = [var for var in obj.dynamic_variables.keys() if variables is None or var in variables]
             if len(varnames):
                 monitor = StateMonitor(
                     obj, varnames, name=f'StateMon_{obj.name}', clock=clock,
@@ -252,9 +235,9 @@ def create_statemonitors(Net, dt, variables, when, suffix):
 def create_network_reset(Net, dt):
     resets = []
     for obj in Net:
-        if hasattr(obj, 'dynamic_variables') and hasattr(obj, 'dynamic_variable_initial'):
+        if hasattr(obj, 'dynamic_variables'):
             reset = '\n'.join([f'{var} = {init}'
-                              for var, init in zip(obj.dynamic_variables, obj.dynamic_variable_initial)
+                              for var, init in obj.dynamic_variables.items()
                               if init is not None])
             if len(reset):
                 reg = obj.run_regularly(reset, dt=dt)
@@ -286,9 +269,7 @@ def create_network(X, Y, Xstim, Ystim, W, D, params, reset_dt=None,
     Input, Input_Exc, Input_Inh = create_input(Net, X, Y, Xstim, Ystim, params, clock, Exc, Inh, suffix)
     SpikeMon_Exc, SpikeMon_Inh = create_spikemonitors(Net, Exc, Inh, suffix)
     if state_dt is not None:
-        if state_vars is None:
-            state_vars = Exc.dynamic_variables + Inh.dynamic_variables
-        if len(state_vars):
+        if state_vars is None or len(state_vars):
             state_monitors = create_statemonitors(Net, state_dt, state_vars, when, suffix)
     if reset_dt is not None:
         resets = create_network_reset(Net, reset_dt)
