@@ -169,23 +169,24 @@ def create_excitatory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extra
     return Syn_EE, Syn_EI
 
 
+def make_inh_synapse(pre, post, iPre, iPost, w, params, **kwargs):
+    syn = Synapses(pre, post, 'w: 1', on_pre='g_inh_post += w', method='exact', namespace=params, **kwargs)
+    syn.connect(i=iPre, j=iPost)
+    syn.w = w
+    return syn
+
+
 def create_inhibitory_synapses(Net, params, clock, presyn, Exc, Inh, W, D, extras, static_delay, suffix):
-    inhibitory_synapse = 'w : 1'
-    inhibitory_on_pre = '''
-        g_inh_post += w
-    '''
     iPre_ie, iPost_ie = np.nonzero(~np.isnan(W[params['N_exc']:, :params['N_exc']]))
     iPre_ii, iPost_ii = np.nonzero(~np.isnan(W[params['N_exc']:, params['N_exc']:]))
 
-    Syn_IE = Synapses(presyn, Exc, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact',
-                      name='IE'+suffix, clock=clock, delay=static_delay)
-    Syn_IE.connect(i=iPre_ie, j=iPost_ie)
-    Syn_IE.w = W[iPre_ie + params['N_exc'], iPost_ie].ravel()
+    w = W[iPre_ie + params['N_exc'], iPost_ie].ravel()
+    Syn_IE = make_inh_synapse(presyn, Exc, iPre_ie, iPost_ie, w, params,
+                              name='IE'+suffix, clock=clock, delay=static_delay)
 
-    Syn_II = Synapses(presyn, Inh, inhibitory_synapse, on_pre=inhibitory_on_pre, method='exact',
-                      name='II'+suffix, clock=clock, delay=static_delay)
-    Syn_II.connect(i=iPre_ii, j=iPost_ii)
-    Syn_II.w = W[iPre_ii + params['N_exc'], iPost_ii + params['N_exc']].ravel()
+    w = W[iPre_ii + params['N_exc'], iPost_ii + params['N_exc']].ravel()
+    Syn_II = make_inh_synapse(presyn, Inh, iPre_ii, iPost_ii, w, params,
+                              name='II'+suffix, clock=clock, delay=static_delay)
 
     Net.add(Syn_IE, Syn_II)
     return Syn_IE, Syn_II
