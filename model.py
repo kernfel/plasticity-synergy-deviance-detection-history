@@ -121,14 +121,14 @@ def create_surrogate(Net, Group, spikes, clock, suffix):
     return Surrogate, Enforcer
 
 
-def make_exc_synapse(pre, post, iPre, iPost, w, params, with_u=False, **kwargs):
+def make_exc_synapse(pre, post, iPre, iPost, w, params, with_u=False, event_driven=True, **kwargs):
     plastic = params['tau_rec'] > 0*ms
     eqn = '''w : 1'''
     dynamic_variables = {}
     if plastic:
         dynamic_variables['xr'] = 1
-        eqn += '''
-    dxr/dt = (1-xr)/tau_rec : 1 (event-driven)
+        eqn += f'''
+    dxr/dt = (1-xr)/tau_rec : 1 ({"event-driven" if event_driven else "clock-driven"})
         '''
         onpre = '''
     g_exc_post += U*xr*w
