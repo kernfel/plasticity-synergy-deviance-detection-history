@@ -71,9 +71,12 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
 
 def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
-    dvdt = '((v_rest-V) + (E_exc-V)*g_exc + (E_exc-V)*g_input + (E_inh-V)*g_inh) / tau_mem'
+    vtmp = '(E_exc-{v})*g_exc + (E_exc-{v})*g_input + (E_inh-{v})*g_inh'
+    dvdt = '((v_rest-{v}) + {tmp}) / tau_mem * int(not_refractory) + (v_reset-{v})/dt*(1-int(not_refractory))'
+    dvsyndt = '((-{v}) + {tmp}) / tau_mem * int(not_refractory) + (-{v})/dt*(1-int(not_refractory))'
     eqn = f'''
-        dv/dt = {dvdt.replace('V','v')}*int(not_refractory) + (v_reset-v)/dt*(1-int(not_refractory)) : volt
+        vtmp = {vtmp.format(v='v')} : volt
+        dv/dt = {dvdt.format(v='v', tmp='vtmp')} : volt
         dg_exc/dt = -g_exc/tau_ampa : 1
         dg_inh/dt = -g_inh/tau_gaba : 1
         dg_input/dt = -g_input/tau_ampa : 1
@@ -86,7 +89,8 @@ def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     if 'u' in extras:
         eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        du/dt = {dvdt.replace('V','u')}*int(not_refractory) + (v_reset-u)/dt*(1-int(not_refractory)) : volt
+        utmp = {vtmp.format(v='u').replace('g_exc', 'g_exc_nox')} : volt
+        du/dt = {dvdt.format(v='u', tmp='utmp')} : volt
         '''
         dynamic_variables['u'] = params['voltage_init']
         dynamic_variables['g_exc_nox'] = 0
