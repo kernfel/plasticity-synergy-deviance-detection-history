@@ -3,7 +3,7 @@ from brian2.only import *
 import spatial
 
 
-def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
+def get_neuron_eqn(params, extras, enforced_spikes):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     vtmp = '(E_exc-{v})*g_exc + (E_exc-{v})*g_input + (E_inh-{v})*g_inh'
     dvdt = '((v_rest-{v}) + {tmp}) / tau_mem * int(not_refractory) + (v_reset-{v})/dt*(1-int(not_refractory))'
@@ -20,19 +20,6 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     threshold = 'v > v_threshold'
     resets = {}
     dynamic_variables = {'v': params['voltage_init'], 'g_exc': 0, 'g_inh': 0, 'g_input': 0}
-    if params['th_ampl'] != 0*mV and params['th_tau'] > 0*ms:
-        extras = extras + ('th_adapt',)
-    if 'th_adapt' in extras:
-        eqn += '''
-        dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
-        '''
-        threshold = 'v > v_threshold + th_adapt'
-        dynamic_variables['th_adapt'] = '0 * volt'
-    if 'xr' in extras:
-        eqn += '''
-        dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
-        '''
-        dynamic_variables['synaptic_xr'] = 1
     if 'u' in extras:
         eqn += f'''
         dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
@@ -53,7 +40,22 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         threshold = 'spike_enforcer > 0'
         resets['spike_enforcer'] = '= 0'
         dynamic_variables['spike_enforcer'] = 0
-        
+    
+    return eqn, threshold, resets, dynamic_variables
+
+def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
+    eqn, threshold, resets, dynamic_variables = get_neuron_eqn(params, extras, enforced_spikes)
+    if (params['th_ampl'] != 0*mV and params['th_tau'] > 0*ms) or 'th_adapt' in extras:
+        eqn += '''
+        dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
+        '''
+        threshold = 'v > v_threshold + th_adapt'
+        dynamic_variables['th_adapt'] = '0 * volt'
+    if 'xr' in extras:
+        eqn += '''
+        dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
+        '''
+        dynamic_variables['synaptic_xr'] = 1
 
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
     Exc = NeuronGroup(params['N_exc'], eqn, threshold=threshold, reset=reset, refractory=params['refractory_exc'],
@@ -61,7 +63,7 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
     Exc.x, Exc.y = X[:params['N_exc']], Y[:params['N_exc']]
     Exc.add_attribute('dynamic_variables')
     Exc.dynamic_variables = dynamic_variables
-    
+
     for var, value in dynamic_variables.items():
         setattr(Exc, var, value)
 
@@ -70,39 +72,7 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
 
 
 def create_inhibitory(Net, X, Y, params, clock, extras, enforced_spikes, suffix):
-    # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
-    vtmp = '(E_exc-{v})*g_exc + (E_exc-{v})*g_input + (E_inh-{v})*g_inh'
-    dvdt = '((v_rest-{v}) + {tmp}) / tau_mem * int(not_refractory) + (v_reset-{v})/dt*(1-int(not_refractory))'
-    dvsyndt = '((-{v}) + {tmp}) / tau_mem * int(not_refractory) + (-{v})/dt*(1-int(not_refractory))'
-    eqn = f'''
-        vtmp = {vtmp.format(v='v')} : volt
-        dv/dt = {dvdt.format(v='v', tmp='vtmp')} : volt
-        dg_exc/dt = -g_exc/tau_ampa : 1
-        dg_inh/dt = -g_inh/tau_gaba : 1
-        dg_input/dt = -g_input/tau_ampa : 1
-        x : meter
-        y : meter
-    '''
-    threshold = 'v > v_threshold'
-    resets = {}
-    dynamic_variables = {'v': params['voltage_init'], 'g_exc': 0, 'g_inh': 0, 'g_input': 0}
-    if 'u' in extras:
-        eqn += f'''
-        dg_exc_nox/dt = -g_exc_nox/tau_ampa : 1
-        utmp = {vtmp.format(v='u').replace('g_exc', 'g_exc_nox')} : volt
-        du/dt = {dvdt.format(v='u', tmp='utmp')} : volt
-        '''
-        dynamic_variables['u'] = params['voltage_init']
-        dynamic_variables['g_exc_nox'] = 0
-    if enforced_spikes:
-        eqn += '''
-        spike_enforcer : 1
-        '''
-        threshold = 'spike_enforcer > 0'
-        resets['spike_enforcer'] = '= 0'
-        dynamic_variables['spike_enforcer'] = 0
-    
-
+    eqn, threshold, resets, dynamic_variables = get_neuron_eqn(params, extras, enforced_spikes)
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
     Inh = NeuronGroup(params['N_inh'], eqn, threshold=threshold, reset=reset, refractory=params['refractory_inh'],
                     method='euler', namespace=params, name='Inh'+suffix, clock=clock)
