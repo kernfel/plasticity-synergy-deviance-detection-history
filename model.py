@@ -49,7 +49,8 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         eqn += '''
         dth_adapt/dt = -th_adapt/th_tau + int(t-1.5*dt < lastspike)*th_ampl/dt : volt
         '''
-        threshold = 'v > v_threshold + th_adapt'
+        if not enforced_spikes:
+            threshold = 'v > v_threshold + th_adapt'
         dynamic_variables['th_adapt'] = '0 * volt'
     if 'xr' in extras:
         eqn += '''
