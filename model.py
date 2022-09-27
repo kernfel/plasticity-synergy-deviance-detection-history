@@ -7,6 +7,7 @@ def get_neuron_eqn(params, extras, enforced_spikes):
     # Noisy dv/dt = ((v_rest-v) + (E_exc-v)*g_exc + (E_exc-v)*g_input + (E_inh-v)*g_inh) / tau_mem + vnoise_std*sqrt(2/tau_noise)*xi : volt (unless refractory)
     vtmp = '(E_exc-{v})*g_exc + (E_exc-{v})*g_input + (E_inh-{v})*g_inh'
     dvdt = '((v_rest-{v}) + {tmp}) / tau_mem * int(not_refractory) + (v_reset-{v})/dt*(1-int(not_refractory))'
+    vsyntmp = '(E_exc-{v})*g_exc + (E_inh-{v})*g_inh'
     dvsyndt = '((-{v}) + {tmp}) / tau_mem * int(not_refractory) + (-{v})/dt*(1-int(not_refractory))'
     eqn = f'''
         vtmp = {vtmp.format(v='v')} : volt
@@ -30,7 +31,8 @@ def get_neuron_eqn(params, extras, enforced_spikes):
         dynamic_variables['g_exc_nox'] = 0
     if 'vsyn' in extras:
         eqn += f'''
-        dvsyn/dt = {dvsyndt.format(v='vsyn', tmp='vtmp')} : volt
+        vsyntmp = {vsyntmp.format(v='v')} : volt
+        dvsyn/dt = {dvsyndt.format(v='vsyn', tmp='vsyntmp')} : volt
         '''
         dynamic_variables['vsyn'] = '0 * volt'
     if enforced_spikes:
