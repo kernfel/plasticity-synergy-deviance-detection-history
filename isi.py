@@ -170,7 +170,7 @@ if __name__ == '__main__':
             or start_at.get('TA', cfg.TAs[0]) != cfg.TAs[0]
             or start_at.get('isi', cfg.ISIs[0]) != cfg.ISIs[0]):
         templ = start_at.get('templ', 0)
-        preset = dd.io.load(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
+        preset = readout.load_results(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
         for key in preset.keys():
             if key not in templates[templ]:
                 preset.pop(key)
@@ -223,7 +223,7 @@ if __name__ == '__main__':
                             rundata.pop('dynamics')
 
                         try:
-                            dd.io.save(cfg.fname.format(**locals()), rundata)
+                            readout.save_results(cfg.fname.format(**locals()), rundata)
                         except Exception as e:
                             print(e)
                         brian_cleanup(working_dir)

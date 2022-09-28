@@ -1,6 +1,8 @@
 from distutils.log import warn
 from itertools import count
 from brian2.only import *
+from numpy.lib.format import open_memmap
+import deepdish as dd
 
 import numpy_ as np
 import inputs
@@ -38,7 +40,11 @@ def get_raw_spikes(Net, params, episodes):
     return raw
 
 
-def get_raw_dynamics(Net, params, episodes, tmax):
+def raw_dynamics_filename(fbase, varname):
+    return f'{fbase}_{varname}.npy'
+
+
+def get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=None):
     raw = {}
     npulses = params['sequence_length']*params['sequence_count']
     if 'StateMon_Exc'+Net.suffix in Net:
@@ -47,6 +53,7 @@ def get_raw_dynamics(Net, params, episodes, tmax):
         t_in_pulse = np.arange(stop=tmax, step=params['dt'])
         T = ((t0_episode[:, None, None] + t0_pulse[None, :, None] + t_in_pulse[None, None, :]) / params['dt'] + .5).astype(int)
         ones_inhibitory = np.ones((params['N_inh'],) + T.shape)
+        storage_shape = (params['N'],) + T.shape
 
         dynamic_variables = {}
         for varname, init in Net['Exc'+Net.suffix].dynamic_variables.items():
@@ -60,7 +67,15 @@ def get_raw_dynamics(Net, params, episodes, tmax):
                     var_inh = ones_inhibitory * eval(init, globals(), params)
                 else:
                     var_inh = ones_inhibitory * init
-            dynamic_variables[varname] = np.concatenate([var_exc, var_inh], axis=0)
+            
+            if raw_fbase is not None:
+                storage = open_memmap(raw_dynamics_filename(raw_fbase, varname), mode='w+', dtype=var_exc.dtype, shape=storage_shape)
+            else:
+                storage = np.empty(dtype=var_exc.dtype, shape=storage_shape)
+
+            storage[:params['N_exc']] = var_exc
+            storage[params['N_exc']:] = var_inh
+            dynamic_variables[varname] = storage
         if 'synaptic_xr' in dynamic_variables:
             dynamic_variables['xr'] = dynamic_variables.pop('synaptic_xr')
         raw.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
@@ -166,6 +181,32 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
     return spike_output
 
 
+def get_episodes(rundata):
+    episodes = set()
+    for pair in rundata['pairs']:
+        for S in (pair['S1'], pair['S2']):
+            for cond in ('std', 'dev', 'msc'):
+                episodes.add(pair[cond][S])
+    return sorted(list(episodes))
+
+
+def separate_raw_dynamics(rundata):
+    episode_mapping = dict(zip(get_episodes(rundata), count()))
+    dynamics = []
+    for pair in rundata['pairs']:
+        out = {}
+        dynamics.append(out)
+        for S in (pair['S1'], pair['S2']):
+            out[S] = {}
+            for cond in ('std', 'dev', 'msc'):
+                episode = pair[cond][S]
+                pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
+                out[S][cond] = {}
+                for varname in rundata['dynamic_variables']:
+                    out[S][cond][varname] = rundata['raw_dynamics'][cond][:, episode_mapping[episode], pulse_mask]
+    return dynamics
+
+
 def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
     if 'StateMon_Exc'+Net.suffix not in Net:
         return None
@@ -184,32 +225,11 @@ def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
     else:
         tmax = params['ISI']
 
-    episodes = set()
-    for pair in rundata['pairs']:
-        for S in (pair['S1'], pair['S2']):
-            for key in ('std', 'dev', 'msc'):
-                episodes.add(pair[key][S])
-    episodes = sorted(list(episodes))
-    episode_mapping = dict(zip(episodes, count()))
-
-    raw_dynamics = get_raw_dynamics(Net, params, episodes, tmax)
-    dynamic_variables = dynamic_variables_out = raw_dynamics.get('dynamic_variables', [])
-    dynamics_output = []
-
-    for pair in rundata['pairs']:
-        out = {}
-        dynamics_output.append(out)
-        for S in (pair['S1'], pair['S2']):
-            out[S] = {}
-            for key in ('std', 'dev', 'msc'):
-                episode = pair[key][S]
-                pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
-                results = out[S][key] = {}
-                for key, okey in zip(dynamic_variables, dynamic_variables_out):
-                    results[okey] = raw_dynamics[key][:, episode_mapping[episode], pulse_mask]
-    rundata['dynamics'] = dynamics_output
-    rundata['dynamic_variables'] = dynamic_variables_out
-    return dynamics_output
+    episodes = get_episodes(rundata)
+    rundata['raw_dynamics'] = get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=rundata.get('raw_fbase', None))
+    rundata['dynamic_variables'] = rundata['raw_dynamics'].pop('dynamic_variables', [])
+    rundata['dynamics'] = separate_raw_dynamics(rundata)
+    return rundata['dynamics']
 
 
 def get_results(Net, params, rundata, compress=False, tmax=None):
@@ -270,3 +290,23 @@ def compress_results(rundata):
                     rtype['spike_hist'] = rtype['spike_hist'][:, :tmax]
                     for varname in rundata['dynamic_variables']:
                         rtype[varname] = rtype[varname][:, :, :tmax]
+
+
+def save_results(fname, rundata):
+    if 'raw_fbase' in rundata:
+        rundata.pop('dynamics')
+        rundata.pop('raw_dynamics')
+    dd.io.save(fname, rundata)
+
+
+def load_results(fname):
+    rundata = dd.io.load(fname)
+    if 'raw_fbase' in rundata and 'dynamics' not in rundata:
+        try:
+            rundata['raw_dynamics'] = {}
+            for varname in rundata['dynamic_variables']:
+                rundata['raw_dynamics'][varname] = open_memmap(raw_dynamics_filename(rundata['raw_fbase'], varname), mode='r')
+            rundata['dynamics'] = separate_raw_dynamics(rundata)
+        except FileNotFoundError as e:
+            print('load_results:', e)
+    return rundata

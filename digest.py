@@ -89,7 +89,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
     nspikes_dtype = np.int8 if log_nbins < 7 else np.int16 if log_nbins < 15 else np.int32 if log_nbins < 31 else np.int64
     for templ, net, STD, TA, iISI, isi in iter_runs(cfg):
         try:
-            res = dd.io.load(cfg.fname.format(**locals()))
+            res = load_results(cfg.fname.format(**locals()))
         except Exception as e:
             print(e)
         for ipair, pair in enumerate(res['pairs']):
