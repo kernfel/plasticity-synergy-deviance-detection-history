@@ -276,22 +276,6 @@ def repeat_run(Net, params, template):
     return {**{k: template[k] for k in ('sequences', 'pairs', 'stimuli')}, 'runtime': T}
 
 
-def compress_results(rundata):
-    tmax = 0
-    for rpair in rundata['results']:
-        for rstim in rpair.values():
-            for rtype in rstim.values():
-                tmax = max(tmax, np.max(np.nonzero(rtype['spike_hist'])[1]) + 1)
-                tceil = rtype['spike_hist'].shape[1]
-    if tmax < tceil:
-        for rpair in rundata['results']:
-            for rstim in rpair.values():
-                for rtype in rstim.values():
-                    rtype['spike_hist'] = rtype['spike_hist'][:, :tmax]
-                    for varname in rundata['dynamic_variables']:
-                        rtype[varname] = rtype[varname][:, :, :tmax]
-
-
 def save_results(fname, rundata):
     elide = ['dynamics']
     if rundata.get('raw_fbase', None) is not None:
