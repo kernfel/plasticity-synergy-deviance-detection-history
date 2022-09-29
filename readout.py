@@ -126,6 +126,26 @@ def quantify_presynaptic(W, params, hist, xr):
     return static_exc, static_inh, dynamic/static_exc
 
 
+def separate_raw_spikes(params, rundata):
+    spike_output = []
+    for pair in rundata['pairs']:
+        out = {}
+        spike_output.append(out)
+        for S in (pair['S1'], pair['S2']):
+            out[S] = {}
+            for cond in ('std', 'dev', 'msc'):
+                episode = pair[cond][S]
+                raw = rundata['raw_spikes'][episode]
+                pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
+                results = out[S][cond] = {}
+                
+                results['nspikes'] = raw['pulsed_nspikes'][pulse_mask]
+                results['pulsed_i'] = [i for i, j in zip(raw['pulsed_i'], pulse_mask) if j]
+                results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
+                results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
+    return spike_output
+
+
 def get_spike_results(Net, params, rundata, compress=False, tmax=None):
     spike_output = []
     itmax = 0
@@ -136,36 +156,20 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
             for key in ('std', 'dev', 'msc'):
                 episodes.add(pair[key][S])
 
-    rundata['raw_spikes'] = raw_spikes = get_raw_spikes(Net, params, list(episodes))    
-    for pair in rundata['pairs']:
-        out = {}
-        spike_output.append(out)
-        for S in (pair['S1'], pair['S2']):
-            out[S] = {}
-            for key in ('std', 'dev', 'msc'):
-                episode = pair[key][S]
-                raw = raw_spikes[episode]
-                pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
-                results = out[S][key] = {}
-                
-                results['nspikes'] = raw['pulsed_nspikes'][pulse_mask]
-                results['pulsed_i'] = [i for i, j in zip(raw['pulsed_i'], pulse_mask) if j]
-                results['pulsed_t'] = [i for i, j in zip(raw['pulsed_t'], pulse_mask) if j]
-                results['spike_hist'] = get_infused_histogram(params, results, lambda *args: 1)
-
-                nz = np.nonzero(results['spike_hist'])[1]
-                if len(nz):
-                    itmax = max(itmax, np.max(nz) + 1)
-                else:
-                    itmax = max(itmax, results['spike_hist'].shape[1])
+    rundata['raw_spikes'] = get_raw_spikes(Net, params, list(episodes))    
+    spike_output = separate_raw_spikes(params, rundata)
     
     if tmax is not None:
         itmax = int(tmax/params['dt'] + 0.5)
         compress = True
     elif compress:
-        tmax = itmax*params['dt']
-    else:
-        tmax = params['ISI']
+        itmax = 0
+        for pair_spikes in spike_output:
+            for stim_spikes in pair_spikes.values():
+                for results in stim_spikes.values():
+                    nz = np.nonzero(results['spike_hist'])[1]
+                    if len(nz):
+                        itmax = max(itmax, np.max(nz) + 1)
     
     if compress:
         for out in spike_output:
@@ -273,7 +277,7 @@ def repeat_run(Net, params, template):
 
 
 def save_results(fname, rundata):
-    elide = ['dynamics']
+    elide = ['dynamics', 'spikes']
     if rundata.get('raw_fbase', None) is not None:
         elide += ['raw_dynamics']
     dd.io.save(fname, {k:v for k,v in rundata.items() if k not in elide})
@@ -293,5 +297,6 @@ def load_results(fname, dynamics_supplements={}):
         else:
             rundata['raw_dynamics'][k] = v
         rundata['dynamic_variables'].append(k)
+    rundata['spikes'] = separate_raw_spikes(rundata['params'], rundata)
     rundata['dynamics'] = separate_raw_dynamics(rundata)
     return rundata
