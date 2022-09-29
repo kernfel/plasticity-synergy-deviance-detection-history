@@ -68,6 +68,9 @@ def get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=None):
                 else:
                     var_inh = ones_inhibitory * init
             
+            if varname == 'synaptic_xr':
+                varname = 'xr'
+            
             if raw_fbase is not None:
                 storage = open_memmap(raw_dynamics_filename(raw_fbase, varname), mode='w+', dtype=var_exc.dtype, shape=storage_shape)
             else:
@@ -75,10 +78,7 @@ def get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=None):
 
             storage[:params['N_exc']] = var_exc
             storage[params['N_exc']:] = var_inh
-            dynamic_variables[varname] = storage
-        if 'synaptic_xr' in dynamic_variables:
-            dynamic_variables['xr'] = dynamic_variables.pop('synaptic_xr')
-        raw.update(**dynamic_variables, dynamic_variables=list(dynamic_variables.keys()))
+            raw[varname] = storage
     return raw
 
 
@@ -226,8 +226,9 @@ def get_dynamics_results(Net, params, rundata, compress=False, tmax=None):
         tmax = params['ISI']
 
     episodes = get_episodes(rundata)
-    rundata['raw_dynamics'] = get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=rundata.get('raw_fbase', None))
-    rundata['dynamic_variables'] = rundata['raw_dynamics'].pop('dynamic_variables', [])
+    raw = get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=rundata.get('raw_fbase', None))
+    rundata['raw_dynamics'] = raw
+    rundata['dynamic_variables'] = list(raw.keys())
     rundata['dynamics'] = separate_raw_dynamics(rundata)
     return rundata['dynamics']
 
