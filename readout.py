@@ -293,20 +293,17 @@ def compress_results(rundata):
 
 
 def save_results(fname, rundata):
+    rundata.pop('dynamics')
     if 'raw_fbase' in rundata:
-        rundata.pop('dynamics')
         rundata.pop('raw_dynamics')
     dd.io.save(fname, rundata)
 
 
 def load_results(fname):
     rundata = dd.io.load(fname)
-    if 'raw_fbase' in rundata and 'dynamics' not in rundata:
-        try:
-            rundata['raw_dynamics'] = {}
-            for varname in rundata['dynamic_variables']:
-                rundata['raw_dynamics'][varname] = open_memmap(raw_dynamics_filename(rundata['raw_fbase'], varname), mode='r')
-            rundata['dynamics'] = separate_raw_dynamics(rundata)
-        except FileNotFoundError as e:
-            print('load_results:', e)
+    if 'raw_fbase' in rundata and 'raw_dynamics' not in rundata:
+        rundata['raw_dynamics'] = {}
+        for varname in rundata['dynamic_variables']:
+            rundata['raw_dynamics'][varname] = open_memmap(raw_dynamics_filename(rundata['raw_fbase'], varname), mode='r')
+    rundata['dynamics'] = separate_raw_dynamics(rundata)
     return rundata
