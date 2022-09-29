@@ -293,10 +293,10 @@ def compress_results(rundata):
 
 
 def save_results(fname, rundata):
-    rundata.pop('dynamics')
+    elide = ['dynamics']
     if rundata.get('raw_fbase', None) is not None:
-        rundata.pop('raw_dynamics')
-    dd.io.save(fname, rundata)
+        elide += ['raw_dynamics']
+    dd.io.save(fname, {k:v for k,v in rundata.items() if k not in elide})
 
 
 def load_results(fname):
