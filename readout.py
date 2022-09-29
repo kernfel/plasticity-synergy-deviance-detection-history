@@ -8,8 +8,7 @@ import deepdish as dd
 import numpy_ as np
 import inputs
 
-from util import concatenate, ensure_unit
-np.concatenate = concatenate
+from util import ensure_unit
 from spike_utils import iterspikes
 
 
