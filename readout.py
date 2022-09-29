@@ -308,6 +308,9 @@ def load_results(fname, dynamics_supplements={}):
     default_params = import_module('conf.params').params
     param_units = {k: get_unit(v.dim) for k,v in default_params.items() if isinstance(v, Quantity)}
     rundata['params'] = ensure_unit(rundata['params'], param_units)
+    for s_episode in rundata['raw_spikes'].values():
+        for s_trial in s_episode['pulsed_t']:
+            s_trial[:] = ensure_unit(s_trial, second)
     rundata['spikes'] = separate_raw_spikes(rundata['params'], rundata)
     rundata['dynamics'] = separate_raw_dynamics(rundata)
     return rundata
