@@ -129,7 +129,6 @@ def quantify_presynaptic(W, params, hist, xr):
 def get_spike_results(Net, params, rundata, compress=False, tmax=None):
     spike_output = []
     itmax = 0
-    rundata['msc_spikes'] = {}
 
     episodes = set()
     for pair in rundata['pairs']:
@@ -137,7 +136,7 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
             for key in ('std', 'dev', 'msc'):
                 episodes.add(pair[key][S])
 
-    raw_spikes = get_raw_spikes(Net, params, list(episodes))    
+    rundata['raw_spikes'] = raw_spikes = get_raw_spikes(Net, params, list(episodes))    
     for pair in rundata['pairs']:
         out = {}
         spike_output.append(out)
@@ -145,9 +144,6 @@ def get_spike_results(Net, params, rundata, compress=False, tmax=None):
             out[S] = {}
             for key in ('std', 'dev', 'msc'):
                 episode = pair[key][S]
-                if key == 'msc' and episode not in rundata['msc_spikes']:
-                    rundata['msc_spikes'][episode] = raw_spikes[episode]
-
                 raw = raw_spikes[episode]
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 results = out[S][key] = {}

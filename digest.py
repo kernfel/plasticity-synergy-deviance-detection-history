@@ -130,7 +130,7 @@ def digest(cfg, spikes=True, hist=True, masked=True):
                 if spikes:
                     episode = pair['msc'][stim]
                     pulse_mask = res['sequences'][episode] != res['stimuli'][stim]  # Non-target MSC pulses
-                    nontarget_nspikes = res['msc_spikes'][episode]['pulsed_nspikes'][pulse_mask]
+                    nontarget_nspikes = res['raw_spikes'][episode]['pulsed_nspikes'][pulse_mask]
 
                     cond = 'nontarget_msc'
                     if cond not in nspikes:
