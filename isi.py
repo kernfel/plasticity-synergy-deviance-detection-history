@@ -32,7 +32,6 @@ def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_fb
             reset_dt=inputs.get_episode_duration(mod_params))
     
     rundata = readout.repeat_run(Net, mod_params, template)
-    rundata['params'] = mod_params
     rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
     readout.get_results(Net, mod_params, rundata, tmax=cfg.ISIs[0]*ms)
@@ -54,7 +53,6 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_f
             reset_dt=inputs.get_episode_duration(mod_params))
     
     rundata = readout.repeat_run(Net, mod_params, template)
-    rundata['params'] = mod_params
     rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
     readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)

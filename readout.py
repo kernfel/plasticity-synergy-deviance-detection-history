@@ -263,7 +263,7 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
             'std': {S1: episode, S2: episode+1},
             'dev': {S1: episode+1, S2: episode}})
         episode += 2
-    return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli}
+    return {'sequences': sequences, 'pairs': pairs, 'runtime': T, 'stimuli': stimuli, 'params': params}
 
 
 def repeat_run(Net, params, template):
@@ -273,7 +273,7 @@ def repeat_run(Net, params, template):
     T = 0*second
     for seq in template['sequences']:
         T = inputs.set_input_sequence(Net, seq, params, T)
-    return {**{k: template[k] for k in ('sequences', 'pairs', 'stimuli')}, 'runtime': T}
+    return {**{k: template[k] for k in ('sequences', 'pairs', 'stimuli')}, 'runtime': T, 'params': params}
 
 
 def save_results(fname, rundata):
