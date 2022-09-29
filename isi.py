@@ -16,7 +16,7 @@ from util import brian_cleanup
 from digest import get_voltage_histograms
 
 
-def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **device_args):
+def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_fbase=None, **device_args):
     device.reinit()
     device.activate(**device_args)
 
@@ -33,12 +33,13 @@ def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **devi
     
     rundata = readout.repeat_run(Net, mod_params, template)
     rundata['params'] = mod_params
+    rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
     readout.get_results(Net, mod_params, rundata, tmax=cfg.ISIs[0]*ms)
     return rundata
 
 
-def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **device_args):
+def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_fbase=None, **device_args):
     device.reinit()
     device.activate(**device_args)
     
@@ -54,6 +55,7 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **dev
     
     rundata = readout.repeat_run(Net, mod_params, template)
     rundata['params'] = mod_params
+    rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
     readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)
 
@@ -71,13 +73,19 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, **dev
             surrogate=surrogate, suffix='_surrogate')
         
         rundata_U = readout.repeat_run(Net, mod_params_U, template)
+        rundata_U['raw_fbase'] = None if raw_fbase is None else f'utmp.{raw_fbase}'
         Net.run(rundata_U['runtime'])
         readout.get_results(Net, mod_params_U, rundata_U, compress=True, tmax=cfg.ISIs[0]*ms)
         for V_pair, U_pair in zip(rundata['dynamics'], rundata_U['dynamics']):
             for S in V_pair.keys():
                 for tp in V_pair[S].keys():
                     V_pair[S][tp]['u'] = U_pair[S][tp]['v']
+        rundata['raw_dynamics']['u'] = rundata_U['raw_dynamics']['v']
         rundata['dynamic_variables'].append('u')
+        if raw_fbase is not None:
+            vfile = readout.raw_dynamics_filename(rundata_U['raw_fbase'], 'v')
+            ufile = readout.raw_dynamics_filename(rundata['raw_fbase'], 'u')
+            os.replace(vfile, ufile)
     return rundata
 
 
@@ -158,6 +166,7 @@ if __name__ == '__main__':
     generate_networks(cfg, rng, start_at)
 
     runit, working_dir = set_run_func(cfg)
+    raw_fbase = cfg.raw_fbase if hasattr(cfg, 'raw_fbase') else None
 
     Xstim, Ystim = spatial.create_stimulus_locations(cfg.params)
 
@@ -209,7 +218,8 @@ if __name__ == '__main__':
                                       'tau_rec': (0*ms, cfg.params['tau_rec'])[STD],
                                       'th_ampl': (0*mV, cfg.params['th_ampl'])[TA]}
                         
-                        rundata = runit(template, with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D)
+                        rundata = runit(template, with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D,
+                                        raw_fbase=None if raw_fbase is None else raw_fbase.format(**locals()))
                         
                         if with_dynamics:
                             for r in rundata['dynamics']:
