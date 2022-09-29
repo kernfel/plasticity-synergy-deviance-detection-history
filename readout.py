@@ -252,11 +252,19 @@ def setup_run(Net, params, rng, stimuli, pairings=None):
     sequences = [MSC]
     pairs = []
     for S1, S2 in pairings:
-        oddball1, T = inputs.create_oddball(
-            Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
-        oddball2, T = inputs.create_oddball(
-            Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
-        sequences.extend([oddball1, oddball2])
+        if params.get('align_sequences', False):
+            for S in (S1, S2):
+                oddball = MSC.copy()
+                nontargets = (oddball != stimuli[S1]) & (oddball != stimuli[S2])
+                oddball[nontargets] = stimuli[S]
+                T = inputs.set_input_sequence(Net, oddball, params, offset=T)
+                sequences.append(oddball)
+        else:
+            oddball1, T = inputs.create_oddball(
+                Net, params, stimuli[S1], stimuli[S2], rng, offset=T)
+            oddball2, T = inputs.create_oddball(
+                Net, params, stimuli[S2], stimuli[S1], rng, offset=T)
+            sequences.extend([oddball1, oddball2])
         pairs.append({
             'S1': S1, 'S2': S2,
             'msc': {S1: 0, S2: 0},
