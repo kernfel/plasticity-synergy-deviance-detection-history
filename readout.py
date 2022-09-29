@@ -203,7 +203,7 @@ def separate_raw_dynamics(rundata):
                 pulse_mask = rundata['sequences'][episode] == rundata['stimuli'][S]
                 out[S][cond] = {}
                 for varname in rundata['dynamic_variables']:
-                    out[S][cond][varname] = rundata['raw_dynamics'][cond][:, episode_mapping[episode], pulse_mask]
+                    out[S][cond][varname] = rundata['raw_dynamics'][varname][:, episode_mapping[episode], pulse_mask]
     return dynamics
 
 
