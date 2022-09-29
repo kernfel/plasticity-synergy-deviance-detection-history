@@ -28,7 +28,11 @@ def concatenate(arrays, /, **kwargs):
 
 def ensure_unit(value, unit):
     if isinstance(value, dict):
-        return {key: ensure_unit(val, unit) for key, val in value.items()}
+        if isinstance(unit, dict):
+            return {key: ensure_unit(val, unit[key]) if key in unit else val
+                    for key, val in value.items()}
+        else:
+            return {key: ensure_unit(val, unit) for key, val in value.items()}
     if isinstance(value, Quantity):
         # value must already be in units [unit]
         assert not isinstance(value/unit, Quantity)

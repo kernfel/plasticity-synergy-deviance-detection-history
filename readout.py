@@ -1,4 +1,5 @@
 from distutils.log import warn
+from importlib import import_module
 from itertools import count
 from brian2.only import *
 from numpy.lib.format import open_memmap
@@ -7,7 +8,7 @@ import deepdish as dd
 import numpy_ as np
 import inputs
 
-from util import concatenate
+from util import concatenate, ensure_unit
 np.concatenate = concatenate
 from spike_utils import iterspikes
 
@@ -305,6 +306,9 @@ def load_results(fname, dynamics_supplements={}):
         else:
             rundata['raw_dynamics'][k] = v
         rundata['dynamic_variables'].append(k)
+    default_params = import_module('conf.params').params
+    param_units = {k: get_unit(v.dim) for k,v in default_params.items() if isinstance(v, Quantity)}
+    rundata['params'] = ensure_unit(rundata['params'], param_units)
     rundata['spikes'] = separate_raw_spikes(rundata['params'], rundata)
     rundata['dynamics'] = separate_raw_dynamics(rundata)
     return rundata
