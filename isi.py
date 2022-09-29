@@ -230,7 +230,6 @@ if __name__ == '__main__':
                                         if not TA:
                                             rt['th_adapt'] = zeros_like(rt['v'])*volt
                             rundata['voltage_histograms'], rundata['masked_voltage_histograms'] = get_voltage_histograms(mod_params, rundata)
-                            rundata.pop('dynamics')
 
                         try:
                             readout.save_results(cfg.fname.format(**locals()), rundata)
