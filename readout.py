@@ -294,14 +294,14 @@ def compress_results(rundata):
 
 def save_results(fname, rundata):
     rundata.pop('dynamics')
-    if 'raw_fbase' in rundata:
+    if rundata.get('raw_fbase', None) is not None:
         rundata.pop('raw_dynamics')
     dd.io.save(fname, rundata)
 
 
 def load_results(fname):
     rundata = dd.io.load(fname)
-    if 'raw_fbase' in rundata and 'raw_dynamics' not in rundata:
+    if rundata.get('raw_fbase', None) is not None and 'raw_dynamics' not in rundata:
         rundata['raw_dynamics'] = {}
         for varname in rundata['dynamic_variables']:
             rundata['raw_dynamics'][varname] = open_memmap(raw_dynamics_filename(rundata['raw_fbase'], varname), mode='r')
