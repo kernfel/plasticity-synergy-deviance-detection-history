@@ -225,4 +225,4 @@ if __name__ == '__main__':
                             print(e)
                         brian_cleanup(working_dir)
 
-                    print(f'Completed GPU ISI sweep (templ {templ}, net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
+                    print(f'Completed ISI sweep (templ {templ}, net {net}, STD {STD}, TA {TA}) after {(time.time()-Tstart)/60:.1f} minutes.')
