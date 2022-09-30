@@ -115,7 +115,7 @@ def generate_networks(cfg, rng, start_at):
     for net in range(cfg.N_networks):
         if net < start_at.get('net', 0):
             continue
-        elif start_at.pop('newnet', True):
+        elif start_at.get('newnet', True):
             if 'nets' in dir(cfg) and net in cfg.nets:
                 res = dd.io.load(cfg.nets[net])
                 X, Y, W, D = res['X']*meter, res['Y']*meter, res['W'], res['D']
