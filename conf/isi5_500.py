@@ -2,7 +2,7 @@ from .isi5 import *
 
 del gpuid
 
-fbase_500 = 'data/isi5_'
+fbase_500 = '/data/felix/culture/isi5-500/isi5_'
 fname = fname.replace(fbase, fbase_500)
 netfile = netfile.replace(fbase, fbase_500)
 digestfile = digestfile.replace(fbase, fbase_500)
