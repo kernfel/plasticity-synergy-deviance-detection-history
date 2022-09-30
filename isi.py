@@ -34,7 +34,7 @@ def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_fb
     rundata = readout.repeat_run(Net, mod_params, template)
     rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
-    readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)
+    readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms if len(cfg.ISIs)>1 else None)
     return rundata
 
 
@@ -55,7 +55,7 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_f
     rundata = readout.repeat_run(Net, mod_params, template)
     rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
-    readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)
+    readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms if len(cfg.ISIs)>1 else None)
 
     if STD and with_dynamics:
         surrogate = {k: {'t': Net[f'SpikeMon_{k}'].t[:], 'i': Net[f'SpikeMon_{k}'].i[:]} for k in ('Exc', 'Inh')}
