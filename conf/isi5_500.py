@@ -11,5 +11,6 @@ fbase = fbase_500
 raw_fbase = fname[:-3]
 
 ISIs = (500,)
+N_templates = 1
 
 start_at = {'newnet': False}
