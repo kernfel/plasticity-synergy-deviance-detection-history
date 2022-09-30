@@ -55,7 +55,6 @@ def get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=None):
         ones_inhibitory = np.ones((params['N_inh'],) + T.shape)
         storage_shape = (params['N'],) + T.shape
 
-        dynamic_variables = {}
         for varname, init in Net['Exc'+Net.suffix].dynamic_variables.items():
             if not hasattr(Net['StateMon_Exc'+Net.suffix], varname):
                 continue
