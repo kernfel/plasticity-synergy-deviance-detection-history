@@ -218,16 +218,6 @@ if __name__ == '__main__':
                         
                         rundata = runit(template, with_dynamics, STD, TA, mod_params, X, Y, Xstim, Ystim, W, D,
                                         raw_fbase=None if raw_fbase is None else raw_fbase.format(**locals()))
-                        
-                        if with_dynamics:
-                            for r in rundata['dynamics']:
-                                for rs in r.values():
-                                    for rt in rs.values():
-                                        if not STD:
-                                            rt['u'] = rt['v']
-                                        if not TA:
-                                            rt['th_adapt'] = zeros_like(rt['v'])*volt
-                            rundata['voltage_histograms'], rundata['masked_voltage_histograms'] = get_voltage_histograms(mod_params, rundata)
 
                         try:
                             readout.save_results(cfg.fname.format(**locals()), rundata)
