@@ -34,7 +34,7 @@ def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_fb
     rundata = readout.repeat_run(Net, mod_params, template)
     rundata['raw_fbase'] = raw_fbase
     Net.run(rundata['runtime'])
-    readout.get_results(Net, mod_params, rundata, tmax=cfg.ISIs[0]*ms)
+    readout.get_results(Net, mod_params, rundata, compress=True, tmax=cfg.ISIs[0]*ms)
     return rundata
 
 
