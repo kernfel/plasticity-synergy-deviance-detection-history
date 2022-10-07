@@ -150,7 +150,7 @@ def get_tmax(params, raw_spikes):
     for raw_episode in raw_spikes.values():
         for pulsed_t in raw_episode['pulsed_t']:
             itmax = max(itmax, int(pulsed_t[-1]/params['dt'] + .5))
-    return itmax
+    return itmax+1
 
 
 def get_spike_results(Net, params, rundata, compress=False, tmax=None, processing=False):
