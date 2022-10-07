@@ -295,7 +295,7 @@ def save_results(fname, rundata):
 
 def load_results(fname, dynamics_supplements={}, raw_fbase=None):
     rundata = dd.io.load(fname)
-    rundata['raw_fbase'] = raw_fbase
+    rundata['raw_fbase'] = raw_fbase or rundata.get('raw_fbase', None)
     if rundata['raw_fbase'] is not None and 'raw_dynamics' not in rundata:
         rundata['raw_dynamics'] = {}
         for varname in rundata['dynamic_variables']:
