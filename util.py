@@ -33,11 +33,13 @@ def ensure_unit(value, unit):
                     for key, val in value.items()}
         else:
             return {key: ensure_unit(val, unit) for key, val in value.items()}
-    if isinstance(value, Quantity):
+    elif isinstance(value, Quantity):
         # value must already be in units [unit]
         assert not isinstance(value/unit, Quantity)
     elif isinstance(value, VariableView):
         assert not isinstance(value[0]/unit, Quantity)
+    elif type(value) in (list, tuple):
+        return type(value)([ensure_unit(v, unit) for v in value])
     else:
         value = value * unit
     return value
