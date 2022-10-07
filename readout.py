@@ -293,9 +293,10 @@ def save_results(fname, rundata):
     dd.io.save(fname, {k:v for k,v in rundata.items() if k not in elide})
 
 
-def load_results(fname, dynamics_supplements={}):
+def load_results(fname, dynamics_supplements={}, raw_fbase=None):
     rundata = dd.io.load(fname)
-    if rundata.get('raw_fbase', None) is not None and 'raw_dynamics' not in rundata:
+    rundata['raw_fbase'] = raw_fbase
+    if rundata['raw_fbase'] is not None and 'raw_dynamics' not in rundata:
         rundata['raw_dynamics'] = {}
         for varname in rundata['dynamic_variables']:
             rundata['raw_dynamics'][varname] = open_memmap(raw_dynamics_filename(rundata['raw_fbase'], varname), mode='r')
