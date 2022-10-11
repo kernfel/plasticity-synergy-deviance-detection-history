@@ -42,19 +42,15 @@ def get_voltage_histograms(params, rundata, overflow=None):
     with warnings.catch_warnings():
         warnings.filterwarnings(action='ignore', message='Mean of empty slice')
         
-        hists, masked_hists = Tree(), Tree()
+        hists = Tree()
         for ipair, pair in enumerate(rundata['pairs']):
             for stim in (pair['S1'], pair['S2']):
                 for cond in conds:
                     dynamics = rundata['dynamics'][ipair][stim][cond]
                     voltages = get_voltages(params, dynamics, overflow)
-                    bmask = voltages['Activity'] >= 0
-                    masked_hists['weight'][ipair][stim][cond] = np.mean(bmask, 1)
-                    mask = np.where(bmask, 1, np.nan)
                     for measure, val in voltages.items():
                         hists[measure][ipair][stim][cond] = val.mean(1)
-                        masked_hists[measure][ipair][stim][cond] = np.nanmean(val*mask, 1)
-        return hists.asdict(), masked_hists.asdict()
+        return hists.asdict()
 
 
 def iter_runs(cfg, dynamics_only=False):
