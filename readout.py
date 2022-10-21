@@ -304,8 +304,10 @@ def load_results(fname, dynamics_supplements={}, raw_fbase=None, compress=False,
             continue
         elif type(v) == str and v in rundata['raw_dynamics']:
             rundata['raw_dynamics'][k] = rundata['raw_dynamics'][v]
-        else:
+        elif isinstance(v, np.ndarray):
             rundata['raw_dynamics'][k] = v
+        else:
+            rundata['raw_dynamics'][k] = np.ones_like(np.array(rundata['raw_dynamics'][rundata['dynamic_variables'][0]])) * v
         rundata['dynamic_variables'].append(k)
     default_params = import_module('conf.params').params
     param_units = {k: get_unit(v.dim) for k,v in default_params.items() if isinstance(v, Quantity)}
