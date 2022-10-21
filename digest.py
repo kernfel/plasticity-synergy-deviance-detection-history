@@ -6,36 +6,28 @@ import warnings
 from matplotlib.pyplot import hist
 from numpy.lib.format import open_memmap
 
-
 from brian2.only import *
 import deepdish as dd
 
 import numpy_ as np
-from util import Tree
+from util import Tree, ensure_unit
+from readout import load_results
 
 
 conds = ('std', 'msc', 'dev')
-voltage_measures = ('Activity', 'Depression', 'Threshold', 'Synapses')
+voltage_measures = ('Activity', 'Depression', 'Threshold')#, 'Synapses')
 
 
 def get_voltages(params, dynamics, overflow=None):
-    if isinstance(dynamics['v']/volt, Quantity):
-        unit, factor = volt, 1000
-    else:
-        unit, factor = 1, 1
-    depression = dynamics['u'] - dynamics['v']
-    threshold = dynamics['th_adapt']
-    activity = dynamics['u'] - params['v_threshold']/unit
-    synapses = dynamics['vsyn'] - depression
-    if overflow == 'max':
-        activity = np.maximum(activity, threshold+depression)
-    elif overflow is not None:
-        activity[activity >= threshold+depression] = overflow
+    depression = ensure_unit(dynamics['u'] - dynamics['v'], volt)
+    threshold = ensure_unit(dynamics['th_adapt'], volt)
+    synapses = ensure_unit(dynamics['vsyn'], volt) + depression  # vsyn + depr = vsyn + u-v = usyn
+    reset = ensure_unit(dynamics['v'] - dynamics['vsyn'], volt) - params['v_rest']
     return {
-        'Activity': activity*factor,
-        'Depression': depression*factor,
-        'Threshold': threshold*factor,
-        'Synapses': synapses}
+        'Depression': depression,
+        'Threshold': threshold,
+        'Synapses': synapses,
+        'Reset': reset}
 
 
 def get_voltage_histograms(params, rundata, overflow=None):
