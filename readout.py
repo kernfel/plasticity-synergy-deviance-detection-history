@@ -292,7 +292,8 @@ def save_results(fname, rundata):
     dd.io.save(fname, {k:v for k,v in rundata.items() if k not in elide})
 
 
-def load_results(fname, dynamics_supplements={}, raw_fbase=None, compress=False, tmax=None):
+def load_results(fname, dynamics_supplements={}, raw_fbase=None, compress=False, tmax=None,
+                 process_spikes=True, process_dynamics=True):
     rundata = dd.io.load(fname)
     rundata['raw_fbase'] = raw_fbase or rundata.get('raw_fbase', None)
     if rundata['raw_fbase'] is not None and 'raw_dynamics' not in rundata:
@@ -312,9 +313,11 @@ def load_results(fname, dynamics_supplements={}, raw_fbase=None, compress=False,
     default_params = import_module('conf.params').params
     param_units = {k: get_unit(v.dim) for k,v in default_params.items() if isinstance(v, Quantity)}
     rundata['params'] = ensure_unit(rundata['params'], param_units)
-    for s_episode in rundata['raw_spikes'].values():
-        for s_trial in s_episode['pulsed_t']:
-            s_trial[:] = ensure_unit(s_trial, second)
-    rundata['spikes'] = separate_raw_spikes(rundata, rundata['params'], compress, tmax)
-    rundata['dynamics'] = separate_raw_dynamics(rundata)
+    if process_spikes:
+        for s_episode in rundata['raw_spikes'].values():
+            for s_trial in s_episode['pulsed_t']:
+                s_trial[:] = ensure_unit(s_trial, second)
+        rundata['spikes'] = separate_raw_spikes(rundata, rundata['params'], compress, tmax)
+    if process_dynamics:
+        rundata['dynamics'] = separate_raw_dynamics(rundata)
     return rundata
