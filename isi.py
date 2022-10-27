@@ -25,7 +25,7 @@ def run_cpu(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_fb
             *net_args, params=mod_params,
             reset_dt=inputs.get_episode_duration(mod_params),
             state_dt=cfg.params['dt'],
-            state_vars=['v', 'vsyn'] + [k for k,v in (('th_adapt', TA), ('u', STD)) if v])
+            state_vars=['v', 'vsyn'] + [k for k,v in (('th_adapt', TA), ('u', STD), ('xr', STD)) if v])
     else:
         Net = model.create_network(
             *net_args, params=mod_params,
@@ -46,7 +46,7 @@ def run_genn(cfg, template, with_dynamics, STD, TA, mod_params, *net_args, raw_f
         Net = model.create_network(
             *net_args, params=mod_params,
             reset_dt=inputs.get_episode_duration(mod_params),
-            state_dt=cfg.params['dt'], state_vars=['v', 'vsyn'] + (['th_adapt'] if TA else []))
+            state_dt=cfg.params['dt'], state_vars=['v', 'vsyn'] + [k for k,v in (('th_adapt', TA), ('xr', STD)) if v])
     else:
         Net = model.create_network(
             *net_args, params=mod_params,
