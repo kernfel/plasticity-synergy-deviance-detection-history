@@ -293,7 +293,9 @@ def save_results(fname, rundata):
 
 
 def load_results(fname, dynamics_supplements={}, raw_fbase=None, compress=False, tmax=None,
-                 process_spikes=True, process_dynamics=True):
+                 process_spikes=True, process_dynamics=True, template_only=False):
+    if template_only:
+        return dd.io.load(fname, ['/sequences', '/pairs', '/runtime', '/stimuli', '/params'])
     rundata = dd.io.load(fname)
     rundata['raw_fbase'] = raw_fbase or rundata.get('raw_fbase', None)
     if rundata['raw_fbase'] is not None and 'raw_dynamics' not in rundata:

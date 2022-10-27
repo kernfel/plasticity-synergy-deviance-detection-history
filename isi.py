@@ -169,19 +169,26 @@ if __name__ == '__main__':
     Xstim, Ystim = spatial.create_stimulus_locations(cfg.params)
 
     # Set up input templates
-    X, Y, W, D = spatial.create_weights(cfg.params, rng)
-    Net = model.create_network(X, Y, Xstim, Ystim, W, D, cfg.params, reset_dt=inputs.get_episode_duration(cfg.params))
-    templates = [readout.setup_run(Net, cfg.params, rng, cfg.stimuli, cfg.pairings) for _ in range(cfg.N_templates)]
-    if (start_at.get('net', 0) != 0
-            or start_at.get('STD', cfg.STDs[0]) != cfg.STDs[0]
-            or start_at.get('TA', cfg.TAs[0]) != cfg.TAs[0]
-            or start_at.get('isi', cfg.ISIs[0]) != cfg.ISIs[0]):
-        templ = start_at.get('templ', 0)
-        preset = readout.load_results(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
-        for key in preset.keys():
-            if key not in templates[templ]:
-                preset.pop(key)
-        templates[templ] = preset
+    if start_at.get('newtempl', True):
+        X, Y, W, D = spatial.create_weights(cfg.params, rng)
+        Net = model.create_network(X, Y, Xstim, Ystim, W, D, cfg.params, reset_dt=inputs.get_episode_duration(cfg.params))
+        templates = [readout.setup_run(Net, cfg.params, rng, cfg.stimuli, cfg.pairings) for _ in range(cfg.N_templates)]
+        if (start_at.get('net', 0) != 0
+                or start_at.get('STD', cfg.STDs[0]) != cfg.STDs[0]
+                or start_at.get('TA', cfg.TAs[0]) != cfg.TAs[0]
+                or start_at.get('isi', cfg.ISIs[0]) != cfg.ISIs[0]):
+            templ = start_at.get('templ', 0)
+            preset = readout.load_results(cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]))
+            for key in preset.keys():
+                if key not in templates[templ]:
+                    preset.pop(key)
+            templates[templ] = preset
+    else:
+        templates = [
+            readout.load_results(
+                cfg.fname.format(templ=templ, net=0, STD=cfg.STDs[0], TA=cfg.TAs[0], isi=cfg.ISIs[0]),
+                template_only=True)
+            for templ in range(cfg.N_templates)]
 
     for templ, template in enumerate(templates):
         if templ < start_at.get('templ', 0):
