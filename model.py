@@ -54,11 +54,11 @@ def create_excitatory(Net, X, Y, params, clock, extras, enforced_spikes, suffix)
         if not enforced_spikes:
             threshold = 'v > v_threshold + th_adapt'
         dynamic_variables['th_adapt'] = '0 * volt'
-    if 'xr' in extras:
+    if 'neuron_xr' in extras:
         eqn += '''
-        dsynaptic_xr/dt = (1-synaptic_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*synaptic_xr/dt : 1
+        dneuron_xr/dt = (1-neuron_xr)/tau_rec - int(t-1.5*dt < lastspike)*U*neuron_xr/dt : 1
         '''
-        dynamic_variables['synaptic_xr'] = 1
+        dynamic_variables['neuron_xr'] = 1
 
     reset = '\n'.join([f'{key} {value}' for key, value in resets.items()])
     Exc = NeuronGroup(params['N_exc'], eqn, threshold=threshold, reset=reset, refractory=params['refractory_exc'],

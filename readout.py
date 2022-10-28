@@ -67,9 +67,6 @@ def get_raw_dynamics(Net, params, episodes, tmax, raw_fbase=None):
                 else:
                     var_inh = ones_inhibitory * init
             
-            if varname == 'synaptic_xr':
-                varname = 'xr'
-            
             if raw_fbase is not None:
                 storage = open_memmap(raw_dynamics_filename(raw_fbase, varname), mode='w+', dtype=var_exc.dtype, shape=storage_shape)
             else:
