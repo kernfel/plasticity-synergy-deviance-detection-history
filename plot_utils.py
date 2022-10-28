@@ -9,7 +9,9 @@ colors = {
     'dev': 'r',
     'msc': 'b',
     'Depression': '#9b19f5',
-    'Threshold': 'C2'
+    'Threshold': 'C2',
+    'Synapses': 'magenta',
+    'Reset': 'red'
 }
 
 
