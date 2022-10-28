@@ -10,8 +10,8 @@ colors = {
     'msc': 'b',
     'Depression': '#9b19f5',
     'Threshold': 'C2',
-    'Synapses': 'magenta',
-    'Reset': 'red'
+    'Synapses': 'orange',
+    'Reset': 'slategrey'
 }
 
 labels = {
