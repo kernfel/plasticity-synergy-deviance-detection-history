@@ -83,7 +83,7 @@ def plot_pulse_hist(histograms, index_N, index_t, dt, figsize=(10,15), grid=Fals
                 order = 1
         orders.append(order)
         m = ax.pcolormesh(x, y, h*10**order, vmin=vmin, vmax=vmax, cmap=cmap, shading='flat')
-        ax.set_xlabel('Time after pulse onset (ms)')
+        ax.set_xlabel('Time after stimulus (ms)')
         if grid:
             ax.grid()
     axs[0].set_ylabel('Neuron #')
