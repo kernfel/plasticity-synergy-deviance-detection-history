@@ -14,6 +14,14 @@ colors = {
     'Reset': 'red'
 }
 
+labels = {
+    'pspike': 'Spike probability',
+    'Depression': '$V_{STD}$ (mV)',
+    'Threshold': '$V_{TA}$ (mV)',
+    'Synapses': '$V_{syn}$ (mV)',
+    'Reset': '$V_{reset}$ (mV)',
+}
+
 
 # From http://www.ccctool.com/html_v_0_9_0_3/CCC_Tool/cccTool.html
 ccc_divergent = LinearSegmentedColormap.from_list(
