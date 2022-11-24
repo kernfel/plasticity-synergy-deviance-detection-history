@@ -1,0 +1,273 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                 %%
+%% Please do not use \input{...} to include other tex files.       %%
+%% Submit your LaTeX manuscript as one .tex document.              %%
+%%                                                                 %%
+%% All additional figures and files should be attached             %%
+%% separately and not embedded in the \TeX\ document itself.       %%
+%%                                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{tikz}
+
+\documentclass[pdflatex,iicol,sn-basic]{sn-jnl}
+
+%%%% Standard Packages
+\usepackage{xcolor,hyperref}
+\usepackage[autostyle=false, style=english]{csquotes}
+%%%%
+
+% Avoid having to ``quote'' verbosely (csquotes package)
+\MakeOuterQuote{"}
+
+% Make Orcid icon
+\definecolor{lime}{HTML}{A6CE39}
+\DeclareRobustCommand{\orcidicon}{%
+	\begin{tikzpicture}
+	\draw[lime, fill=lime] (0,0) 
+	circle [radius=0.16] 
+	node[white] {{\fontfamily{qag}\selectfont \tiny ID}};
+	\draw[white, fill=white] (-0.0625,0.095) 
+	circle [radius=0.007];
+	\end{tikzpicture}
+	\hspace{-2mm}
+}
+
+\foreach \x in {A, ..., Z}{%
+	\expandafter\xdef\csname orcid\x\endcsname{\noexpand\href{https://orcid.org/\csname orcidauthor\x\endcsname}{\noexpand\orcidicon}}
+}
+
+% Define the ORCID iD command for each author separately.
+\newcommand{\orcidauthorA}{0000-0002-3420-4576}
+\newcommand{\orcidauthorB}{0000-0001-9402-0851}
+
+%%%%%=============================================================================%%%%
+%%%%  Remarks: This template is provided to aid authors with the preparation
+%%%%  of original research articles intended for submission to journals published 
+%%%%  by Springer Nature. The guidance has been prepared in partnership with 
+%%%%  production teams to conform to Springer Nature technical requirements. 
+%%%%  Editorial and presentation requirements differ among journal portfolios and 
+%%%%  research disciplines. You may find sections in this template are irrelevant 
+%%%%  to your work and are empowered to omit any such section if allowed by the 
+%%%%  journal you intend to submit to. The submission guidelines and policies 
+%%%%  of the journal take precedence. A detailed User Manual is available in the 
+%%%%  template package for technical guidance.
+%%%%%=============================================================================%%%%
+
+\jyear{2021}%
+
+%% as per the requirement new theorem styles can be included as shown below
+\theoremstyle{thmstyleone}%
+\newtheorem{theorem}{Theorem}%  meant for continuous numbers
+%%\newtheorem{theorem}{Theorem}[section]% meant for sectionwise numbers
+%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
+\newtheorem{proposition}[theorem]{Proposition}% 
+%%\newtheorem{proposition}{Proposition}% to get separate numbers for theorem and proposition etc.
+
+\theoremstyle{thmstyletwo}%
+\newtheorem{example}{Example}%
+\newtheorem{remark}{Remark}%
+
+\theoremstyle{thmstylethree}%
+\newtheorem{definition}{Definition}%
+
+\raggedbottom
+%%\unnumbered% uncomment this for unnumbered level heads
+
+\begin{document}
+
+\title{Short-term synaptic plasticity and threshold adaptation act in synergy to give rise to deviance detection in a spiking model of neuronal culture}
+
+%%=============================================================%%
+%% Prefix	-> \pfx{Dr}
+%% GivenName	-> \fnm{Joergen W.}
+%% Particle	-> \spfx{van der} -> surname prefix
+%% FamilyName	-> \sur{Ploeg}
+%% Suffix	-> \sfx{IV}
+%% NatureName	-> \tanm{Poet Laureate} -> Title after name
+%% Degrees	-> \dgr{MSc, PhD}
+%% \author*[1,2]{\pfx{Dr} \fnm{Joergen W.} \spfx{van der} \sur{Ploeg} \sfx{IV} \tanm{Poet Laureate} 
+%%                 \dgr{MSc, PhD}}\email{iauthor@gmail.com}
+%%=============================================================%%
+
+\author*[1]{\fnm{Felix Benjamin} \sur{Kern} \orcidA{}}\email{kernfel@gmail.com}
+
+\author[1]{\fnm{Zenas C.} \sur{Chao} \orcidB{}}\email{zenas.c.chao@gmail.com}
+
+\affil[1]{\orgdiv{International Research Center for Neurointelligence (WPI-IRCN)}, \orgname{The University of Tokyo}, \orgaddress{\city{Tokyo}, \country{Japan}}}
+
+%%==================================%%
+%% sample for unstructured abstract %%
+%%==================================%%
+
+\abstract{TODO}
+
+
+\keywords{keyword1, Keyword2, Keyword3, Keyword4}
+
+\maketitle
+
+\section{Introduction}\label{sec-intro}
+
+
+\section{Methods}\label{sec-methods}
+
+\subsection{Model}\label{sec-model}
+
+Our research is based on loose approximation of a matured culture of dissociated neurons. We modeled neurons as leaky integrate-and-fire units whose membrane potential $v$ followed
+\begin{equation}
+    \tau_m \frac{dv}{dt} = (v_{rest}-v) + I_{syn}
+\end{equation}
+where
+\begin{align}
+    I_{syn} &= g_e(E_e-v) + g_i(E_i-v) \nonumber \\
+    \tau_e \frac{dg_e}{dt} &= -g_e + \sum_{j \in \boldsymbol E} U x_j w \delta(t - \hat{t_j}) \nonumber \\
+    \tau_i \frac{dg_i}{dt} &= -g_i + \sum_{j \in \boldsymbol I} w \delta(t - \hat{t_j}) \label{eqn-syn}
+\end{align}
+with $\boldsymbol E$ and $\boldsymbol I$ the sets of presynaptic excitatory and inhibitory neurons, respectively, $\delta(\cdot)$ the Dirac delta function, and $\hat{t}$ the time of spikes.
+
+Excitatory, but not inhibitory, synapses were subject to short-term depression (STD), simplified from \cite{Tsodyks1997-qt}; since synaptic transmission was not stochastic, we modeled the depression variable $x_j$ as a property of the presynaptic neuron $j$,
+\begin{equation}
+    \tau_x \frac{dx_j}{dt} = (1-x_j) - U x_j \delta(t - \hat{t})
+\end{equation}
+In ablated experiments without STD, $x$ remained constant at $1$, equivalent to $\tau_x = 0$, but $U$ in Equation \ref{eqn-syn} was left unchanged for balance purposes.
+
+When a neuron's membrane potential reached $v \geq v_\theta$, a spike was emitted, and the potential was clamped to $v = v_{reset}$ for a fixed refractory period of 3~ms (excitatory neurons) or 2~ms (inhibitory neurons). For inhibitory neurons, the firing threshold remained constant at $v_\theta = \theta_0$, while for excitatory neurons, the threshold included an adaptive component, following
+\begin{align}
+    v_\theta &= \theta_0 + \theta \nonumber \\
+    \tau_{TA} \frac{dV_{TA}}{dt} &= -V_{TA} + \hat{\theta} \delta(t - \hat{t})
+\end{align}
+In ablated experiments without TA, $\hat{\theta}$ was set to $0$ to abolish adaptation.
+
+Figure \ref{fig1}C shows the internal and presynaptic dynamics of an excitatory neuron in a contrived example for the purpose of illustration. The model was implemented in Brian2 \citep{Stimberg2019-tc}, accelerated with Brian2GeNN \cite{Stimberg2020-go}, and simulated with an integration time step of 1~ms. Synaptic delay was not modeled explicitly, but spikes were delivered, and voltages reset, in the time step following spike emission. We simulated neurons without any stochasticity in either their inputs or their parameters, other than network structure (see below), in order to ensure that our results were driven purely by the experimental paradigm, rather than any model-internal sources of noise.
+
+800 excitatory and 200 inhibitory neurons were placed randomly in a two-dimensional circular space with a radius of 4~mm, mimicking a petri dish, and formed synapses of weight $w=1$ with 50 randomly selected postsynaptic partners within a range of 2~mm (excitatory) or 1~mm (inhibitory). Connectivity and weights remained fixed throughout simulation. Stimulation sites were evenly distributed 2.5~mm from the center of the dish, and stimulation delivered a one-time increase in $g_e$ to the 10 closest neurons, sufficient to trigger 2-3 spikes each. See Figure \ref{fig1}AB for a representative example of the resulting network structure. Networks were pseudo-randomly generated according to the above scheme and screened for minimal stimulus response, discarding networks where less than half of all neurons in the fully recovered network responded to stimulation at any of the five sites.
+
+\subsection{Paradigm}\label{sec-paradigm}
+
+To investigate deviance detection, we used a classical oddball paradigm \citep{TODO} as illustrated in Figure \ref{fig2}A, presenting a total of 500 stimuli at regular intervals of 500~ms. Target stimuli (labeled A hereafter) and distractor stimuli (labeled B to E) were presented in three randomized sequences: The "standard" sequence (std), consisting of 400 presentations of A and 100 presentations of B; the "deviant" sequence (dev) with 100 A and 400 B, and the many-standards control sequence (msc) with 100 presentations of each of the stimuli A through E. In this way, A is presented as the predominant and therefore expected stimulus (std), as an infrequent violation of an expectation (of B, dev), and, to control for pure adaptation effects, as an equally infrequent stimulus with no strong expectation of any particular input (msc).
+
+In each network, we simulated oddball sequences with two A/B stimulus pairs (sites 1 and 2 in one pair, and sites 3 and 5 in the other pair), where each stimulus site in a pair was used as both target (A) and non-target (B). In addition, we simulated one msc sequence, yielding 4 complete data sets per network, or a total of 120 data sets across all networks. Networks were reset to a fully recovered state between sequence presentations to guarantee their independence.
+
+\section{Results}\label{sec-results}
+
+\subsection{Deviance detection}\label{sec-dd}
+
+We define deviance detection as a network's ability to pick out unexpected inputs from an otherwise homogeneous or otherwise unsurprising stream of inputs. Following related research \citep{TODO}, we were careful to exclude effects due to stimulus identity (e.g. comparing responses to A and B in the dev sequence) and to adaptation to frequent stimulus presentation (e.g. comparing A in the dev sequence to A in the std sequence). In other words, we used the msc sequence as a neutral baseline where the target stimulus was presented no more often than in the dev sequence, but no expectation of a competing stimulus B could be formed. To quantify deviance detection, we compared the mean number of spikes fired across the network in response to target stimulus A in the dev and msc sequences, defining a deviance detection index (DDI) as
+\begin{equation}
+    DDI = \frac{R^A_{dev} - R^A_{msc}}{R^A_{dev} + R^A_{msc}}
+\end{equation}
+We define adaptation (msc - std) and mismatch (dev - std) indices in similar fashion, capturing respectively the effect of adaptation, and of both adaptation and deviance detection together.
+
+Our first aim was to replicate deviance detection properties reported in dissociated neuronal cell culture by \cite{Kubota2021-dx}, reproduced in Figure \ref{fig2}B. With minimal tuning of global parameters, we found that most networks (and 92 of 120 target stimuli) reliably produced not only mismatch responses based on adaptation alone, but also showed robust deviance detection, as summarized in Figure \ref{fig2}D.
+
+The model responses developed on a compressed time scale compared to neuronal culture, which we tentatively attribute to unfaithful aspects of the model, including a lack of conduction delay or spontaneous activity, a much smaller number of participating neurons, and structural differences. However, we could readily identify target stimuli whose response profiles looked otherwise qualitatively similar to the cell culture results.
+
+Having confirmed the presence of deviance detection in our model, we then turned to an ablation approach to try to identify how the two short-term plasticity mechanisms in the model -- synaptic short-term depression (STD) and threshold adaptation (TA) -- enable the networks to learn relevant regularities. As shown in Figure \ref{fig3}, networks with neither plasticity mechanism did not show any difference in response, indicating that stimulation did not have any long-lasting effects in membrane voltage or synaptic conductance. Networks with only STD likewise did not show any deviance detection, though they did exhibit robust adaptation effects (data not shown), leading to a smaller target response in std than in either dev or msc sequences. Conversely, with only TA, networks produced both adaptation and deviance detection effects.
+
+Finally, with both STD and TA applied, deviance detection was also reliable, as shown before; however, we were surprised to find that the effect was significantly stronger than that of either plasticity mechanism alone (STD: t = 6.7, p = 4.53e-10; TA: t = 3.2, p = 0.00103), and greater too than the sum of both STD only and TA only DDI values (t = 3.6, p = 0.000199). This suggests that TA and STD act not as independent mechanisms in this paradigm, but rather interact constructively to enhance the network's ability to encode temporal regularities.
+
+In the following, we will use a sample network and target stimulus to first build an understanding of how TA leads to deviance detection when acting alone. Then, we will build on this understanding to elucidate how the addition of STD, which is ineffective on its own, can lead to an increased deviant response. The particular network and target stimulus site used in the following individual analyses was selected for the response size to target and non-target stimuli (A, B), both of which were average, as well as its deviance detection performance, which likewise reflected the tendencies observed across all networks.
+
+\subsection{The role of TA in deviance detection}\label{sec-ta}
+
+To understand why the same stimulus A evoked a higher response in dev than in msc, we first compared the average responses in the two conditions. As shown in Figure \ref{fig4}A, we found that the response developed in a qualitatively similar fashion, with a tendency of dev spikes to occur earlier, particularly shortly after stimulation, and more frequently, particularly towards the later part of the response. Since the stimulus was identical in both conditions, this difference had to be due to either changed firing thresholds, or changed synaptic currents as a consequence of spike differences earlier in the response. We quantified the former with the strength of adaptation $V_{TA}$, which showed a clear and widespread lowering of thresholds at the start of dev trials relative to msc, followed by an increase beyond the msc baseline in many neurons as they spiked (Figure \ref{fig4}B).
+
+To quantify the synaptic contributions to a neuron's membrane potential $v$, we calculated a quantity $V_{syn}$, which captures all synaptic inputs, but excludes voltage deflections caused by direct stimulation and by the self-inhibition induced by resetting to $v_{reset} < v_{rest}$ after a spike (see Figure S\ref{SI-fig1}). Being induced by spiking activity, this measure closely followed the activity pattern, making the earlier activation of the dev response clearly visible across the network (Figure \ref{fig4}C). In addition, since $V_{syn}$ decays with the membrane timescale $\tau_m$, but resets to $0$ on postsynaptic spikes, many of the neurons that spiked more frequently showed lower $V_{syn}$ towards the end of network activity.
+
+Based on these measures, we then asked why there were more spikes in dev trials. To answer this, we weighted the contrasts in $V_{TA}$ and $V_{syn}$ by the spike probability contrast, discarding any instances of equal or lower firing in dev, and summed over neurons, directly linking network-wide increased activity to its immediate underlying causes, de-adaptation and depolarization. We found that the increased depolarization induced by synaptic input greatly outweighed the impact of reduced adaptation throughout most of the response (Figure \ref{fig4}D). Only in the very early stages of the response did adaptation dominate the increase in firing (Figure \ref{fig4}E), whereas the late response was enlarged primarily as a result of increased presynaptic excitation. This trend was reflected in most networks investigated, as shown in the summary plot in Figure \ref{fig4}F. To summarize, while most added spikes arose from increased prior activity within a trial, the initial impetus -- the increase in the early response -- was largely caused by lower TA.
+
+Having established that the increased response to A in dev trials was driven by lower thresholds, we next turned to the cause of this reduction. Firstly, plotting $V_{TA}$ at the start of A trials in Figure \ref{fig5}A, we found that most of the network was indeed less adapted in dev, with only a few neurons in the vicinity of B showing higher thresholds. We hypothesized that this could be due to the different non-target stimulation pattern, since B was stimulated more frequently in dev than msc. Indeed, as shown in Figure \ref{fig5}B, the non-target response activity in the dev sequence -- in other words, the response to B -- was concentrated around the site where B was delivered, while in the msc sequence, activity in response to the various non-target stimuli was dispersed across most of the network. Notably, although the comparison is between 400 B trials in dev, and only 100 B trials (but 300 C, D and E trials) in msc, only a small handful of neurons responded more to non-target stimulation in dev, and most of these were very close to the stimulation site of B.
+
+We quantified the correlation between the differences in non-target response magnitude and strength of adaptation before target trials across excitatory neurons, and found an almost perfect relationship (Pearson's r = 0.99, n = 800, see Figure \ref{fig5}C). This effect was robust across networks: Greater reduction in the non-target response was closely correlated with a greater reduction in $V_{TA}$ at the start of A trials. In addition, we found a robust relationship between the reduction in $V_{TA}$ in a given neuron and its increased response in target trials in dev (r = -0.42), corroborating the notion that lower thresholds yield higher responses.
+
+Finally, we examined the cause of the reduced response in non-target trials. By moving from the msc sequence to the dev sequence, two things change: Firstly, stimulations with non-target C, D and E are replaced with B, which would cause different responses even in the absence of adaptation, and secondly, the more frequent presentation of B changes adaptation, reducing the average response. We contrasted the response to B in the msc sequence with the response to other non-target stimuli in the same sequence, and with the response to B in dev, to estimate the effect of stimulus replacement and adaptation, respectively. We found that, in this particular instance, adaptation weakly, but consistently, decreased the response, whereas stimulus replacement reduced many responses more dramatically while permitting larger responses in many neurons in the general vicinity of the stimulus sites of A and B. Across networks, however, the effect of adaptation was more pronounced and more consistent, removing an average of 71 spikes per trial, whereas stimulus replacement had no effect on average.
+
+To conclude, TA plays two complementary roles in deviance detection, affecting the standard and deviant response separately: On the one hand, it reduces the response to the frequently presented standard stimulus, leading to a larger deviant response merely by contrast with the corresponding standard. On the other hand, due to the overlap in receptive fields, TA acts as blanket suppression in the many-standards control condition, against which the deviant response stands out, relieved from this suppression and encountering a less fatigued network.
+
+\subsection{The role of STD in deviance detection}\label{sec-std}
+
+As noted above, short-term depression alone exerted no deviance detection effect, but its addition did enhance the deviance detection effect established by TA. To understand the basis of this apparent synergy, we contrasted the TA-only condition examined in the previous section against the same network with both TA and STD. As shown in Figure \ref{fig6}, we found that the non-target response magnitude was reduced by the introduction of STD, as we would expect. Indeed, across networks, the response to all stimuli was reduced, regardless of context. Concomitantly, and in keeping with the above analysis, the levels of $V_{TA}$ before A trials also dropped.
+
+However, we noticed a systematic difference in the reduction of both response magnitude and $V_{TA}$ between the dev and msc conditions: The non-target response in the dev sequence was reduced more than that in the msc sequence, leading to stronger de-adaptation and, as a consequence, a larger A trial response in dev compared to TA-only in large parts of the network. Across networks, only few cases of an increased dev response were seen; however, the response to target stimulus was reduced less in dev than msc, and less in msc than std. This differential reduction was directly responsible for the larger DDI reported in Figure \ref{fig3}, but how did it arise?
+
+We hypothesized that, due to its relatively short time scale, the direct effect of STD across trials is limited to repeated trials of the same stimulus, or in other words, to the standard stimulus in oddball sequences. However, by reducing the standard response -- or, shifting the perspective, the non-target dev response -- in the full model, STD also affects adaptation levels, causing de-adaptation and thereby indirectly increasing the target dev response.
+
+In direct support of the notion that STD does carry over between (repeated) trials, we noted first that the response sizes in the STD-only condition was less in std than both msc and dev, see Figure \ref{fig6}D, indicating robust SSA. To show that the across-trial effect of STD in the full model is limited to the dev non-target trials, however, we needed a more sophisticated tool, showing the level of depression experienced by each neuron. Since the effect of STD is to reduce excitatory postsynaptic potentials (EPSP), we estimated this reduction per synapse in a given trial type $S$ (e.g. A dev) as the product of the expected number of spikes transmitted $R^S$, the peak EPSP of the synapse ($k = 1.4 mV$, recall that all weights are 1), and its average depression coefficient $(1-x)$. Summing these EPSP estimates onto each postsynaptic neuron, we arrived at a rough estimate
+
+\begin{equation}
+    D^S = \sum_{i \in pre} R^S_i k (1-x_i^{t=0})
+\end{equation}
+
+of the total membrane potential lost due to STD.
+
+In Figure \ref{fig7}, we show that, in A dev and A msc trials, depression has relatively evenly distributed effects across the network. Neither sequence seemed to have a stronger overall effect, despite a slight trend towards stronger depression near the stimulus site in the msc sequence. This trend was also seen in B msc trials. In sharp contrast, in B dev trials, depression was very strong and very clearly localized to the stimulation site. This location dependence was closely mirrored in the B dev network response, which was likewise largely confined to the area near the stimulation site (data not shown). To quantify this result while avoiding spurious events, we averaged the depression value $D$ over neurons with no less than 1 spike in 5 trials. Across networks, we found that depression in the dev sequence was systematically stronger for B than for A (t = 7.5, p = 7.07e-12). More importantly, the level of depression in A trials changed considerably less between msc and dev sequences when compared to B trials (t = -6.7, p = 3.92e-10). Taken together, this shows that, indeed, the dominant direct effect of STD was to weaken the response to the frequently presented standard stimulus.
+
+Finally, to complete the picture and confirm our hypothesis in full, we compared the small, but significant relief from depression in A dev trials relative to msc (t = -3.2, p = 0.001) to the difference in $V_{TA}$, applying the same neuron exclusion criteria. We found that the relief from suppression that was shown above to be a key ingredient to deviance detection was driven almost exclusively by lower $V_{TA}$ (t = 11, p = 4.06e-19). More importantly, adding STD to the model induced a much larger additional difference in $V_{TA}$, compared to the TA-only condition, than in directly STD-related $D$ (t = 2.1, p = 0.0195), indicating that, indeed, STD affected the deviant response primarily through indirect effects.
+
+\section{Discussion}\label{sec-discussion}
+
+\backmatter
+
+\bmhead{Supplementary information}
+TODO
+
+\bmhead{Author contributions}
+All authors contributed to the study conception and design. Material preparation, data collection and analysis were performed by Felix Benjamin Kern. The first draft of the manuscript was written by Felix Benjamin Kern and all authors commented on previous versions of the manuscript. All authors read and approved the final manuscript.
+
+\bmhead{Code availability}
+TODO
+
+\section*{Declarations}
+
+\bmhead{Funding}
+This study was funded by a World Premier International Research Center Initiative research startup grant.
+
+\bmhead{Competing interests}
+The authors have no relevant financial or non-financial interests to disclose.
+
+\bmhead{Ethics approval}
+Not applicable.
+
+\bmhead{Consent to participate}
+Not applicable.
+
+\bmhead{Consent for publication}
+Not applicable.
+
+\begin{appendices}
+
+\section{Section title of first appendix}\label{secA1}
+
+An appendix contains supplementary information that is not an essential part of the text itself but which may be helpful in providing a more comprehensive understanding of the research problem or it is information that is too cumbersome to be included in the body of the paper.
+
+%%=============================================%%
+%% For submissions to Nature Portfolio Journals %%
+%% please use the heading ``Extended Data''.   %%
+%%=============================================%%
+
+%%=============================================================%%
+%% Sample for another appendix section			       %%
+%%=============================================================%%
+
+%% \section{Example of another appendix section}\label{secA2}%
+%% Appendices may be used for helpful, supporting or essential material that would otherwise 
+%% clutter, break up or be distracting to the text. Appendices can consist of sections, figures, 
+%% tables and equations etc.
+
+\end{appendices}
+
+%%===========================================================================================%%
+%% If you are submitting to one of the Nature Portfolio journals, using the eJP submission   %%
+%% system, please include the references within the manuscript file itself. You may do this  %%
+%% by copying the reference list from your .bbl file, paste it into the main manuscript .tex %%
+%% file, and delete the associated \verb+\bibliography+ commands.                            %%
+%%===========================================================================================%%
+
+\bibliography{sn-bibliography}% common bib file
+%% if required, the content of .bbl file can be included here once bbl is generated
+%%\input sn-article.bbl
+
+%% Default %%
+%%\input sn-sample-bib.tex%
+
+\end{document}
