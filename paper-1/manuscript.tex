@@ -9,7 +9,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RequirePackage{tikz}
 
-\documentclass[pdflatex,iicol,sn-basic]{sn-jnl}
+\documentclass[pdflatex,referee,iicol,sn-basic]{sn-jnl}
 
 %%%% Standard Packages
 \usepackage{xcolor,hyperref}
@@ -75,7 +75,7 @@
 
 \begin{document}
 
-\title{Short-term synaptic plasticity and threshold adaptation act in synergy to give rise to deviance detection in a spiking model of neuronal culture}
+\title[Synaptic and somatic short-term plasticity collaborate to yield deviance detection]{Short-term synaptic plasticity and threshold adaptation act in synergy to give rise to deviance detection in a spiking model of neuronal culture}
 
 %%=============================================================%%
 %% Prefix	-> \pfx{Dr}
@@ -138,73 +138,127 @@ When a neuron's membrane potential reached $v \geq v_\theta$, a spike was emitte
 \end{align}
 In ablated experiments without TA, $\hat{\theta}$ was set to $0$ to abolish adaptation.
 
-Figure \ref{fig1}C shows the internal and presynaptic dynamics of an excitatory neuron in a contrived example for the purpose of illustration. The model was implemented in Brian2 \citep{Stimberg2019-tc}, accelerated with Brian2GeNN \cite{Stimberg2020-go}, and simulated with an integration time step of 1~ms. Synaptic delay was not modeled explicitly, but spikes were delivered, and voltages reset, in the time step following spike emission. We simulated neurons without any stochasticity in either their inputs or their parameters, other than network structure (see below), in order to ensure that our results were driven purely by the experimental paradigm, rather than any model-internal sources of noise.
+\begin{figure*}%
+    \centering
+    \includegraphics{fig1.eps}
+    \caption{\textbf{a} Sample network layout, showing excitatory and inhibitory neurons and all outgoing synaptic connections from a small subset. \textbf{b} Distance from stimulation site 0 in terms of minimum number of excitatory synapses. Stimulation is provided to the 10 neurons nearest to each of 5 stimulation sites, which are regularly spaced on a circle with a radius of 2.5 mm. \textbf{c} Membrane and synaptic dynamics of a neuron innervated by an excitatory and an inhibitory neuron firing pre-determined spikes. The excitatory connection has weight $w = 3$ for demonstration purposes only; a single connection with $w = 1$ is normally unable to evoke postsynaptic firing. Top: Membrane voltage (black, $\tau$ = 30 ms), firing threshold baseline (gray) and adaptive threshold (green, $\tau$ = 1 s) demonstrating TA. Middle: Excitatory ($g_e$, $\tau$ = 2 ms) and inhibitory ($g_i$, $\tau$ = 4 ms) synaptic conductances, demonstrating excitatory STD. Bottom: Inputs to $g_e$ and $g_i$ (vertical bars), and the depression variable $x$ of the excitatory presynaptic neuron (dashed line)}
+    \label{fig1}
+\end{figure*}
 
-800 excitatory and 200 inhibitory neurons were placed randomly in a two-dimensional circular space with a radius of 4~mm, mimicking a petri dish, and formed synapses of weight $w=1$ with 50 randomly selected postsynaptic partners within a range of 2~mm (excitatory) or 1~mm (inhibitory). Connectivity and weights remained fixed throughout simulation. Stimulation sites were evenly distributed 2.5~mm from the center of the dish, and stimulation delivered a one-time increase in $g_e$ to the 10 closest neurons, sufficient to trigger 2-3 spikes each. See Figure \ref{fig1}AB for a representative example of the resulting network structure. Networks were pseudo-randomly generated according to the above scheme and screened for minimal stimulus response, discarding networks where less than half of all neurons in the fully recovered network responded to stimulation at any of the five sites.
+Figure \ref{fig1}c shows the internal and presynaptic dynamics of an excitatory neuron in a contrived example for the purpose of illustration. The model was implemented in Brian2 \citep{Stimberg2019-tc}, accelerated with Brian2GeNN \citep{Stimberg2020-go}, and simulated with an integration time step of 1~ms. Synaptic delay was not modeled explicitly, but spikes were delivered, and voltages reset, in the time step following spike emission. We simulated neurons without any stochasticity in either their inputs or their parameters, other than network structure (see below), in order to ensure that our results were driven purely by the experimental paradigm, rather than any model-internal sources of noise.
+
+800 excitatory and 200 inhibitory neurons were placed randomly in a two-dimensional circular space with a radius of 4~mm, mimicking a petri dish, and formed synapses of weight $w=1$ with 50 randomly selected postsynaptic partners within a range of 2~mm (excitatory) or 1~mm (inhibitory). Connectivity and weights remained fixed throughout simulation. Stimulation sites were evenly distributed 2.5~mm from the center of the dish, and stimulation delivered a one-time increase in $g_e$ to the 10 closest neurons, sufficient to trigger 2-3 spikes each. See Figure \ref{fig1}a,b for a representative example of the resulting network structure. Networks were pseudo-randomly generated according to the above scheme and screened for minimal stimulus response, discarding networks where less than half of all neurons in the fully recovered network responded to stimulation at any of the five sites.
 
 \subsection{Paradigm}\label{sec-paradigm}
 
-To investigate deviance detection, we used a classical oddball paradigm \citep{TODO} as illustrated in Figure \ref{fig2}A, presenting a total of 500 stimuli at regular intervals of 500~ms. Target stimuli (labeled A hereafter) and distractor stimuli (labeled B to E) were presented in three randomized sequences: The "standard" sequence (std), consisting of 400 presentations of A and 100 presentations of B; the "deviant" sequence (dev) with 100 A and 400 B, and the many-standards control sequence (msc) with 100 presentations of each of the stimuli A through E. In this way, A is presented as the predominant and therefore expected stimulus (std), as an infrequent violation of an expectation (of B, dev), and, to control for pure adaptation effects, as an equally infrequent stimulus with no strong expectation of any particular input (msc).
+To investigate deviance detection, we used a classical oddball paradigm as illustrated in Figure \ref{fig2}a, presenting a total of 500 stimuli at regular intervals of 500~ms. Target stimuli (labeled A hereafter) and distractor stimuli (labeled B to E) were presented in three randomized sequences: The "standard" sequence (std), consisting of 400 presentations of A and 100 presentations of B; the "deviant" sequence (dev) with 100 A and 400 B, and the many-standards control sequence (msc) with 100 presentations of each of the stimuli A through E. In this way, A is presented as the predominant and therefore expected stimulus (std), as an infrequent violation of an expectation (of B, dev), and, to control for pure adaptation effects, as an equally infrequent stimulus with no strong expectation of any particular input (msc).
 
-In each network, we simulated oddball sequences with two A/B stimulus pairs (sites 1 and 2 in one pair, and sites 3 and 5 in the other pair), where each stimulus site in a pair was used as both target (A) and non-target (B). In addition, we simulated one msc sequence, yielding 4 complete data sets per network, or a total of 120 data sets across all networks. Networks were reset to a fully recovered state between sequence presentations to guarantee their independence.
+In each network, we simulated oddball sequences with two A/B stimulus pairs (sites 1 and 2 in one pair, and sites 3 and 5 in the other pair), where each stimulus site in a pair was used once as target (A) and once as non-target (B), and a single msc sequence involving all sites. Networks were reset to a fully recovered state between sequence presentations to guarantee their independence. This yielded 4 complete data sets per network, or a total of 120 data sets across all networks.
 
 \section{Results}\label{sec-results}
 
 \subsection{Deviance detection}\label{sec-dd}
 
-We define deviance detection as a network's ability to pick out unexpected inputs from an otherwise homogeneous or otherwise unsurprising stream of inputs. Following related research \citep{TODO}, we were careful to exclude effects due to stimulus identity (e.g. comparing responses to A and B in the dev sequence) and to adaptation to frequent stimulus presentation (e.g. comparing A in the dev sequence to A in the std sequence). In other words, we used the msc sequence as a neutral baseline where the target stimulus was presented no more often than in the dev sequence, but no expectation of a competing stimulus B could be formed. To quantify deviance detection, we compared the mean number of spikes fired across the network in response to target stimulus A in the dev and msc sequences, defining a deviance detection index (DDI) as
+\begin{figure*}%
+    \centering
+    \includegraphics{fig2.pdf}
+    \caption{\textbf{a} Illustration of the oddball paradigm used. Each square represents a stimulus, with the target (A) in dark blue, and other stimuli in lighter colors. The temporal extent of stimulation is exaggerated; in reality, stimulation was delivered in a single time step, and the response allowed to develop freely for 500 ms. \textbf{b} Response of a neuronal cell culture in vitro, adapted from \cite{Kubota2021-dx}. \textbf{c} Model response, showing average network-wide spike counts after stimulation with target (A) in each sequence. \textbf{d} Mismatch, SSA and deviance detection indices across networks and stimulus pairs (n = 120). In this and later figures, notches indicate the confidence interval for the median, calculated by bootstrap with 10000 iterations. All indices were positive (mismatch: t = 11, p = 6.7e-21, SSA: t = 7.8, p = 1.05e-12, deviance detection: t = 6.5, p = 1.05e-09)}
+    \label{fig2}
+\end{figure*}
+
+We define deviance detection as a network's ability to pick out unexpected inputs from an otherwise homogeneous or otherwise unsurprising stream of inputs. Following related research \citep{TODO}, we were careful to exclude effects due to stimulus identity (i.e., avoiding direct comparisons between different stimuli) or due to adaptation to frequent stimulus presentation (i.e., avoiding direct comparisons of A in the dev sequence to A in the std sequence). In other words, we used the msc sequence as a neutral baseline where the target stimulus was presented no more often than in the dev sequence, but no expectation of a competing stimulus B could be formed. To quantify deviance detection, we compared the mean number of spikes fired across the network in response to target stimulus A in the dev and msc sequences, defining a deviance detection index (DDI) as
 \begin{equation}
     DDI = \frac{R^A_{dev} - R^A_{msc}}{R^A_{dev} + R^A_{msc}}
 \end{equation}
-We define adaptation (msc - std) and mismatch (dev - std) indices in similar fashion, capturing respectively the effect of adaptation, and of both adaptation and deviance detection together.
+We define stimulus-specific adaptation (SSA, msc - std) and mismatch (dev - std) indices analogously, capturing respectively the effect of adaptation, and of both adaptation and deviance detection together.
 
-Our first aim was to replicate deviance detection properties reported in dissociated neuronal cell culture by \cite{Kubota2021-dx}, reproduced in Figure \ref{fig2}B. With minimal tuning of global parameters, we found that most networks (and 92 of 120 target stimuli) reliably produced not only mismatch responses based on adaptation alone, but also showed robust deviance detection, as summarized in Figure \ref{fig2}D.
+Our first aim was to replicate deviance detection properties reported in dissociated neuronal cell culture by \cite{Kubota2021-dx}, reproduced in Figure \ref{fig2}b. With minimal tuning of global parameters, we found that most networks (92 out of 120 target stimuli) reliably produced not only mismatch responses based on adaptation alone, but also showed robust deviance detection, as summarized in Figure \ref{fig2}d.
 
 The model responses developed on a compressed time scale compared to neuronal culture, which we tentatively attribute to unfaithful aspects of the model, including a lack of conduction delay or spontaneous activity, a much smaller number of participating neurons, and structural differences. However, we could readily identify target stimuli whose response profiles looked otherwise qualitatively similar to the cell culture results.
 
-Having confirmed the presence of deviance detection in our model, we then turned to an ablation approach to try to identify how the two short-term plasticity mechanisms in the model -- synaptic short-term depression (STD) and threshold adaptation (TA) -- enable the networks to learn relevant regularities. As shown in Figure \ref{fig3}, networks with neither plasticity mechanism did not show any difference in response, indicating that stimulation did not have any long-lasting effects in membrane voltage or synaptic conductance. Networks with only STD likewise did not show any deviance detection, though they did exhibit robust adaptation effects (data not shown), leading to a smaller target response in std than in either dev or msc sequences. Conversely, with only TA, networks produced both adaptation and deviance detection effects.
+Having confirmed the presence of deviance detection in our model, we then turned to an ablation approach to try to identify how the two short-term plasticity mechanisms in the model -- synaptic short-term depression (STD) and threshold adaptation (TA) -- enabled the networks to learn relevant regularities. As shown in Figure \ref{fig3}, networks with neither plasticity mechanism did not show any difference in response, indicating that stimulation did not have any long-lasting effects in membrane voltage or synaptic conductance. Networks with only STD likewise did not show any deviance detection, though they did exhibit robust stimulus-specific adaptation effects, leading to a smaller target response in std than in either dev or msc sequences. Conversely, with only TA, networks produced both adaptation and deviance detection effects.
 
-Finally, with both STD and TA applied, deviance detection was also reliable, as shown before; however, we were surprised to find that the effect was significantly stronger than that of either plasticity mechanism alone (STD: t = 6.7, p = 4.53e-10; TA: t = 3.2, p = 0.00103), and greater too than the sum of both STD only and TA only DDI values (t = 3.6, p = 0.000199). This suggests that TA and STD act not as independent mechanisms in this paradigm, but rather interact constructively to enhance the network's ability to encode temporal regularities.
+\begin{figure*}%
+    \centering
+    \includegraphics{fig3.pdf}
+    \caption{Deviance detection and SSA indices under model ablation. \textbf{a} Sample network responses to target stimulation, with the deviance detection index in each instance noted in the plot titles. \textbf{b, c} Deviance detection and SSA indices across networks and stimulus pairs. Significance was assessed by 1-sample t-tests. TODO p-values: text or table?}
+    \label{fig3}
+\end{figure*}
 
-In the following, we will use a sample network and target stimulus to first build an understanding of how TA leads to deviance detection when acting alone. Then, we will build on this understanding to elucidate how the addition of STD, which is ineffective on its own, can lead to an increased deviant response. The particular network and target stimulus site used in the following individual analyses was selected for the response size to target and non-target stimuli (A, B), both of which were average, as well as its deviance detection performance, which likewise reflected the tendencies observed across all networks.
+Finally, with both STD and TA applied, deviance detection was also reliable, as shown before; however, we were surprised to find that the effect was significantly stronger than that of either plasticity mechanism alone (STD: t = 6.7, p = 4.53e-10; TA: t = 3.2, p = 0.00103), and greater too than the sum of the DDI values across both STD only and TA only models (t = 3.6, p = 0.000199). This suggests that TA and STD act not as independent mechanisms in this paradigm, but rather interact constructively to enhance the network's ability to encode input regularities.
+
+In the following, we will use the sample network and target stimulus shown in Figure \ref{fig3}a to first build an understanding of how TA leads to deviance detection when acting alone. Then, we will build on this understanding to elucidate how the addition of STD, which is ineffective on its own, can lead to an increased deviant response. The particular network and target stimulus site used in the following individual analyses was selected for the response size to target and non-target stimuli (A, B), both of which were average, as well as its deviance detection performance, which likewise reflected the tendencies observed across all networks.
 
 \subsection{The role of TA in deviance detection}\label{sec-ta}
 
-To understand why the same stimulus A evoked a higher response in dev than in msc, we first compared the average responses in the two conditions. As shown in Figure \ref{fig4}A, we found that the response developed in a qualitatively similar fashion, with a tendency of dev spikes to occur earlier, particularly shortly after stimulation, and more frequently, particularly towards the later part of the response. Since the stimulus was identical in both conditions, this difference had to be due to either changed firing thresholds, or changed synaptic currents as a consequence of spike differences earlier in the response. We quantified the former with the strength of adaptation $V_{TA}$, which showed a clear and widespread lowering of thresholds at the start of dev trials relative to msc, followed by an increase beyond the msc baseline in many neurons as they spiked (Figure \ref{fig4}B).
+To understand why the same stimulus A evoked a higher response in dev than in msc, we first compared the average responses in the two conditions. As shown in Figure \ref{fig4}a, we found that the response developed in a qualitatively similar fashion, with a tendency of dev spikes to occur earlier, particularly shortly after stimulation, and more frequently, particularly towards the later part of the response. Since the stimulus was identical in both conditions, this difference had to be due to either changed firing thresholds, or changed synaptic currents as a consequence of activity differences in earlier parts of the response. We quantified the former with the strength of adaptation $V_{TA}$ (Figure \ref{fig4}b), which showed a clear and widespread lowering of thresholds at the start of dev trials relative to msc, followed by an increase beyond the msc baseline in many neurons as they spiked. Correlating the difference in $V_{TA}$ at the beginning of trials with the difference in trial spike count, we found that, across neurons, lower thresholds are strongly predictive of higher activity (r = -0.424, p = 3.1e-36, see Figure \ref{fig4}d).
 
-To quantify the synaptic contributions to a neuron's membrane potential $v$, we calculated a quantity $V_{syn}$, which captures all synaptic inputs, but excludes voltage deflections caused by direct stimulation and by the self-inhibition induced by resetting to $v_{reset} < v_{rest}$ after a spike (see Figure S\ref{SI-fig1}). Being induced by spiking activity, this measure closely followed the activity pattern, making the earlier activation of the dev response clearly visible across the network (Figure \ref{fig4}C). In addition, since $V_{syn}$ decays with the membrane timescale $\tau_m$, but resets to $0$ on postsynaptic spikes, many of the neurons that spiked more frequently showed lower $V_{syn}$ towards the end of network activity.
+To quantify the synaptic contributions to a neuron's membrane potential $v$, we calculated a quantity $V_{syn}$, shown in Figure \ref{fig4}c, which captures all synaptic inputs, but excludes voltage deflections caused by direct stimulation and by the self-inhibition induced by resetting to $v_{reset} < v_{rest}$ after a spike. Being induced by spiking activity, this measure closely followed the activity pattern, making the earlier activation of the dev response clearly visible across the network. In addition, since $V_{syn}$ decays with the membrane timescale $\tau_m$, but resets to $0$ on postsynaptic spikes, many of the neurons that spiked more frequently showed lower $V_{syn}$ towards the end of network activity.
 
-Based on these measures, we then asked why there were more spikes in dev trials. To answer this, we weighted the contrasts in $V_{TA}$ and $V_{syn}$ by the spike probability contrast, discarding any instances of equal or lower firing in dev, and summed over neurons, directly linking network-wide increased activity to its immediate underlying causes, de-adaptation and depolarization. We found that the increased depolarization induced by synaptic input greatly outweighed the impact of reduced adaptation throughout most of the response (Figure \ref{fig4}D). Only in the very early stages of the response did adaptation dominate the increase in firing (Figure \ref{fig4}E), whereas the late response was enlarged primarily as a result of increased presynaptic excitation. This trend was reflected in most networks investigated, as shown in the summary plot in Figure \ref{fig4}F. To summarize, while most added spikes arose from increased prior activity within a trial, the initial impetus -- the increase in the early response -- was largely caused by lower TA.
+\begin{figure*}%
+    \centering
+    \includegraphics{fig4.pdf}
+    \caption{Responses and threshold adaptation in a TA-only ablation. \textbf{a, b, c} Post-stimulus histograms across target trials, showing trial time along the horizontal axis, and neurons along the vertical, sorted by the time of the first recorded spike across all trials and conditions. Left and middle column, target trials in dev and msc sequence, respectively; right column, contrast between these two. \textbf{d} Per-neuron relationship between the contrast (dev - msc) in $V_{TA}$ at the start of trials, and the contrast in average number of spikes fired, excluding inhibitory neurons, and associated linear regression (r = -0.424, p = 3.1e-36). \textbf{e} Contribution of $V_{TA}$ and $V_{syn}$ to bins with increased firing in dev (i.e., red bins in the spike probability contrast, \textbf{a}), weighted by that same contrast. \textbf{f} Contribution of $V_{TA}$ relative to the sum of the weighted contributions in \textbf{e}. \textbf{g} Relative contribution of $V_{TA}$ across networks, showing median (solid line) and inter-quartile range (shaded area).}
+    \label{fig4}
+\end{figure*}
 
-Having established that the increased response to A in dev trials was driven by lower thresholds, we next turned to the cause of this reduction. Firstly, plotting $V_{TA}$ at the start of A trials in Figure \ref{fig5}A, we found that most of the network was indeed less adapted in dev, with only a few neurons in the vicinity of B showing higher thresholds. We hypothesized that this could be due to the different non-target stimulation pattern, since B was stimulated more frequently in dev than msc. Indeed, as shown in Figure \ref{fig5}B, the non-target response activity in the dev sequence -- in other words, the response to B -- was concentrated around the site where B was delivered, while in the msc sequence, activity in response to the various non-target stimuli was dispersed across most of the network. Notably, although the comparison is between 400 B trials in dev, and only 100 B trials (but 300 C, D and E trials) in msc, only a small handful of neurons responded more to non-target stimulation in dev, and most of these were very close to the stimulation site of B.
+Based on these measures, we then asked why there were more spikes in dev trials. To answer this, we weighted the contrasts in $V_{TA}$ and $V_{syn}$ by the spike probability contrast, discarding any instances of equal or lower firing in dev, and summed over neurons. The resulting time courses (Figure \ref{fig4}e) reveal the immediate underlying causes of network-wide activity increases, namely de-adaptation and depolarization. We found that increased depolarization induced by synaptic input greatly outweighed the impact of reduced adaptation throughout most of the response. Only in the very early stages of the response did adaptation dominate the increase in firing (Figure \ref{fig4}f), whereas the late response was enlarged primarily as a result of increased presynaptic excitation. This trend was reflected in most networks investigated, as shown in the summary plot in Figure \ref{fig4}g. To summarize, while most added spikes arose from increased prior activity within a trial, the initial impetus -- the increase in the early response -- was largely caused by lower TA.
 
-We quantified the correlation between the differences in non-target response magnitude and strength of adaptation before target trials across excitatory neurons, and found an almost perfect relationship (Pearson's r = 0.99, n = 800, see Figure \ref{fig5}C). This effect was robust across networks: Greater reduction in the non-target response was closely correlated with a greater reduction in $V_{TA}$ at the start of A trials. In addition, we found a robust relationship between the reduction in $V_{TA}$ in a given neuron and its increased response in target trials in dev (r = -0.42), corroborating the notion that lower thresholds yield higher responses.
+Having established that the increased response to A in dev trials was driven by lower thresholds, we next turned to the cause of this reduction. Firstly, plotting $V_{TA}$ at the start of A trials in Figure \ref{fig5}a, we found that most of the network was indeed less adapted in dev, with only a few neurons in the vicinity of B showing higher thresholds. We hypothesized that this could be due to the different non-target stimulation pattern, since B was stimulated more frequently in dev than msc. Indeed, as shown in Figure \ref{fig5}b, the non-target response activity in the dev sequence -- in other words, the response to B -- was concentrated around the site where B was delivered, while in the msc sequence, activity in response to the various non-target stimuli was dispersed across most of the network. Notably, although the comparison is between 400 B trials in dev, and only 100 B trials (alongside 300 C, D and E trials) in msc, only a small handful of neurons responded more to non-target stimulation in dev, most of these very close to the stimulation site of B.
 
-Finally, we examined the cause of the reduced response in non-target trials. By moving from the msc sequence to the dev sequence, two things change: Firstly, stimulations with non-target C, D and E are replaced with B, which would cause different responses even in the absence of adaptation, and secondly, the more frequent presentation of B changes adaptation, reducing the average response. We contrasted the response to B in the msc sequence with the response to other non-target stimuli in the same sequence, and with the response to B in dev, to estimate the effect of stimulus replacement and adaptation, respectively. We found that, in this particular instance, adaptation weakly, but consistently, decreased the response, whereas stimulus replacement reduced many responses more dramatically while permitting larger responses in many neurons in the general vicinity of the stimulus sites of A and B. Across networks, however, the effect of adaptation was more pronounced and more consistent, removing an average of 71 spikes per trial, whereas stimulus replacement had no effect on average.
+\begin{figure*}%
+    \centering
+    \includegraphics{fig5.pdf}
+    \caption{}
+    \label{fig5}
+\end{figure*}
 
-To conclude, TA plays two complementary roles in deviance detection, affecting the standard and deviant response separately: On the one hand, it reduces the response to the frequently presented standard stimulus, leading to a larger deviant response merely by contrast with the corresponding standard. On the other hand, due to the overlap in receptive fields, TA acts as blanket suppression in the many-standards control condition, against which the deviant response stands out, relieved from this suppression and encountering a less fatigued network.
+We quantified the correlation between the differences in non-target response magnitude and strength of adaptation before target trials across excitatory neurons, and found an almost perfect relationship (Pearson's r = 0.99, n = 800, see Figure \ref{fig5}d). This effect was robust across networks: Greater reduction in the non-target response was closely correlated with a greater reduction in $V_{TA}$ at the start of A trials.
+
+Finally, we examined the cause of the reduced response in non-target trials. Going from the msc sequence to the dev sequence, two things change: Firstly, stimulations with non-target C, D and E are replaced with B, which would cause different responses even in the absence of adaptation, and secondly, the more frequent presentation of B changes adaptation, reducing the average response. To estimate the effect of stimulus replacement and adaptation, respectively, we contrasted the response to B in the msc sequence with the response to other non-target stimuli in the same sequence (replacement), and with the response to B in dev (adaptation). We found that, in this particular network and stimulus pair, adaptation weakly but consistently decreased the response, whereas stimulus replacement reduced many responses more dramatically while permitting larger responses in many neurons in the general vicinity of the stimulus sites of A and B. Across networks, however, the effect of adaptation was more pronounced and more consistent, removing an average of 71 spikes per trial, whereas stimulus replacement had no effect on average (t = -0.69, p = 0.246).
+
+To conclude, TA plays two complementary roles in deviance detection, affecting the standard and deviant response separately: On the one hand, it reduces the response to the frequently presented standard stimulus, leading to a larger deviant response merely by contrast with the corresponding standard (SSA). On the other hand, due to the overlap in receptive fields, TA acts as blanket suppression in the many-standards control condition, against which the deviant response, relieved from this suppression and encountering a less fatigued network, stands out.
 
 \subsection{The role of STD in deviance detection}\label{sec-std}
 
 As noted above, short-term depression alone exerted no deviance detection effect, but its addition did enhance the deviance detection effect established by TA. To understand the basis of this apparent synergy, we contrasted the TA-only condition examined in the previous section against the same network with both TA and STD. As shown in Figure \ref{fig6}, we found that the non-target response magnitude was reduced by the introduction of STD, as we would expect. Indeed, across networks, the response to all stimuli was reduced, regardless of context. Concomitantly, and in keeping with the above analysis, the levels of $V_{TA}$ before A trials also dropped.
 
-However, we noticed a systematic difference in the reduction of both response magnitude and $V_{TA}$ between the dev and msc conditions: The non-target response in the dev sequence was reduced more than that in the msc sequence, leading to stronger de-adaptation and, as a consequence, a larger A trial response in dev compared to TA-only in large parts of the network. Across networks, only few cases of an increased dev response were seen; however, the response to target stimulus was reduced less in dev than msc, and less in msc than std. This differential reduction was directly responsible for the larger DDI reported in Figure \ref{fig3}, but how did it arise?
+\begin{figure*}%
+    \centering
+    \includegraphics{fig6.pdf}
+    \caption{}
+    \label{fig6}
+\end{figure*}
 
-We hypothesized that, due to its relatively short time scale, the direct effect of STD across trials is limited to repeated trials of the same stimulus, or in other words, to the standard stimulus in oddball sequences. However, by reducing the standard response -- or, shifting the perspective, the non-target dev response -- in the full model, STD also affects adaptation levels, causing de-adaptation and thereby indirectly increasing the target dev response.
+However, we noticed a systematic difference in the reduction of both response magnitude and $V_{TA}$ between the dev and msc conditions: The non-target response in the dev sequence was reduced more than that in the msc sequence, leading to a larger difference between the responses in these two contexts. $V_{TA}$ before A trials followed suit, leading to stronger de-adaptation and, as a consequence, a larger A trial response in dev in large parts of the network in the full model compared to TA-only. Across networks, only few cases of an increased dev response were seen; however, the response to the target stimulus (Figure \ref{fig6}e) was reduced less in dev than msc, and less in msc than std. This differential reduction was directly responsible for the larger DDI reported in Figure \ref{fig3}, but how did it arise?
 
-In direct support of the notion that STD does carry over between (repeated) trials, we noted first that the response sizes in the STD-only condition was less in std than both msc and dev, see Figure \ref{fig6}D, indicating robust SSA. To show that the across-trial effect of STD in the full model is limited to the dev non-target trials, however, we needed a more sophisticated tool, showing the level of depression experienced by each neuron. Since the effect of STD is to reduce excitatory postsynaptic potentials (EPSP), we estimated this reduction per synapse in a given trial type $S$ (e.g. A dev) as the product of the expected number of spikes transmitted $R^S$, the peak EPSP of the synapse ($k = 1.4 mV$, recall that all weights are 1), and its average depression coefficient $(1-x)$. Summing these EPSP estimates onto each postsynaptic neuron, we arrived at a rough estimate
+Due to its relatively short time scale, the direct effect of STD across trials was likely limited to repeated trials of the same stimulus, such as the frequent stimulus in oddball sequences. However, by reducing the standard (i.e., the dev non-target) response in the full model, we hypothesized that STD also affects adaptation levels, causing de-adaptation and thereby indirectly increasing the target dev response.
+
+In direct support of the notion that STD indeed carried over between (repeated) trials, we noted first that the response size in the STD-only condition was slightly less in std than in msc or dev (cf. Figure \ref{fig3}c), indicating some amount of SSA. To show that the across-trial effect of STD in the full model was limited to the dev non-target trials, however, we needed a more sophisticated tool, showing the level of depression experienced by each neuron. Since the effect of STD is to reduce excitatory postsynaptic potentials (EPSP), we estimated this reduction per synapse in a given trial type $S$ (e.g. A dev) as the product of the expected number of transmitted spikes $R^S$, the peak EPSP of the synapse ($k = 1.4 mV$, recall that all weights are 1), and its average depression coefficient $(1-x)$ at the start of the trial. Summing these estimates onto each postsynaptic neuron, we arrived at a rough estimate
 
 \begin{equation}
     D^S = \sum_{i \in pre} R^S_i k (1-x_i^{t=0})
 \end{equation}
 
-of the total membrane potential lost due to STD.
+of the average depolarization lost due to STD.
 
-In Figure \ref{fig7}, we show that, in A dev and A msc trials, depression has relatively evenly distributed effects across the network. Neither sequence seemed to have a stronger overall effect, despite a slight trend towards stronger depression near the stimulus site in the msc sequence. This trend was also seen in B msc trials. In sharp contrast, in B dev trials, depression was very strong and very clearly localized to the stimulation site. This location dependence was closely mirrored in the B dev network response, which was likewise largely confined to the area near the stimulation site (data not shown). To quantify this result while avoiding spurious events, we averaged the depression value $D$ over neurons with no less than 1 spike in 5 trials. Across networks, we found that depression in the dev sequence was systematically stronger for B than for A (t = 7.5, p = 7.07e-12). More importantly, the level of depression in A trials changed considerably less between msc and dev sequences when compared to B trials (t = -6.7, p = 3.92e-10). Taken together, this shows that, indeed, the dominant direct effect of STD was to weaken the response to the frequently presented standard stimulus.
+\begin{figure*}%
+    \centering
+    \includegraphics{fig7.pdf}
+    \caption{}
+    \label{fig7}
+\end{figure*}
 
-Finally, to complete the picture and confirm our hypothesis in full, we compared the small, but significant relief from depression in A dev trials relative to msc (t = -3.2, p = 0.001) to the difference in $V_{TA}$, applying the same neuron exclusion criteria. We found that the relief from suppression that was shown above to be a key ingredient to deviance detection was driven almost exclusively by lower $V_{TA}$ (t = 11, p = 4.06e-19). More importantly, adding STD to the model induced a much larger additional difference in $V_{TA}$, compared to the TA-only condition, than in directly STD-related $D$ (t = 2.1, p = 0.0195), indicating that, indeed, STD affected the deviant response primarily through indirect effects.
+In Figure \ref{fig7}, we show that, in A dev and A msc trials, depression had relatively evenly distributed effects across the network. Neither sequence seemed to have a stronger overall effect, despite a slight trend towards weaker depression near the stimulus site in the dev sequence. In sharp contrast, in B dev trials, depression was very strong and very clearly localized to the stimulation site. This location dependence was closely mirrored in the B dev network response, which was largely confined to the area near the stimulation site (data not shown). To quantify this result while avoiding spurious events, we averaged the depression value $D$ over neurons with at least 1 spike per 5 trials in the given context. Across networks, we found that depression in the dev sequence was systematically stronger for B than for A (t = 7.5, p = 7.07e-12). More importantly, the level of depression in A trials changed considerably less between msc and dev sequences when compared to B trials (t = -6.7, p = 3.92e-10). Taken together, this shows that, indeed, the dominant direct effect of STD was to weaken the response to the frequently presented standard stimulus.
+
+Finally, to complete the picture and confirm our hypothesis in full, we compared the small, but significant relief from depression in A dev trials relative to msc (t = -3.2, p = 0.001) to the difference in $V_{TA}$, applying the same neuron exclusion criteria. We found that the relief from suppression, which was shown in the TA-only analysis above to be a key ingredient to deviance detection, was driven almost exclusively by lower $V_{TA}$ (t = 11, p = 4.06e-19). More importantly, adding STD to the model induced a much larger additional difference in $V_{TA}$ compared to the TA-only condition, than in directly STD-related $D$ (t = 2.1, p = 0.0195), indicating that, indeed, STD affected the deviant response primarily through indirect effects.
 
 \section{Discussion}\label{sec-discussion}
+
+
+
+
+
 
 \backmatter
 
@@ -234,27 +288,26 @@ Not applicable.
 \bmhead{Consent for publication}
 Not applicable.
 
-\begin{appendices}
+% \begin{appendices}
 
-\section{Section title of first appendix}\label{secA1}
+% \section{Section title of first appendix}\label{secA1}
 
-An appendix contains supplementary information that is not an essential part of the text itself but which may be helpful in providing a more comprehensive understanding of the research problem or it is information that is too cumbersome to be included in the body of the paper.
 
-%%=============================================%%
-%% For submissions to Nature Portfolio Journals %%
-%% please use the heading ``Extended Data''.   %%
-%%=============================================%%
+% %%=============================================%%
+% %% For submissions to Nature Portfolio Journals %%
+% %% please use the heading ``Extended Data''.   %%
+% %%=============================================%%
 
-%%=============================================================%%
-%% Sample for another appendix section			       %%
-%%=============================================================%%
+% %%=============================================================%%
+% %% Sample for another appendix section			       %%
+% %%=============================================================%%
 
-%% \section{Example of another appendix section}\label{secA2}%
-%% Appendices may be used for helpful, supporting or essential material that would otherwise 
-%% clutter, break up or be distracting to the text. Appendices can consist of sections, figures, 
-%% tables and equations etc.
+% %% \section{Example of another appendix section}\label{secA2}%
+% %% Appendices may be used for helpful, supporting or essential material that would otherwise 
+% %% clutter, break up or be distracting to the text. Appendices can consist of sections, figures, 
+% %% tables and equations etc.
 
-\end{appendices}
+% \end{appendices}
 
 %%===========================================================================================%%
 %% If you are submitting to one of the Nature Portfolio journals, using the eJP submission   %%
@@ -263,7 +316,7 @@ An appendix contains supplementary information that is not an essential part of 
 %% file, and delete the associated \verb+\bibliography+ commands.                            %%
 %%===========================================================================================%%
 
-\bibliography{sn-bibliography}% common bib file
+\bibliography{bibliography}% common bib file
 %% if required, the content of .bbl file can be included here once bbl is generated
 %%\input sn-article.bbl
 
