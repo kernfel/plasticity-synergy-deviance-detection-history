@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import colorConverter
 from brian2.units import msecond
+import styling
 
 
 colors = {
-    'std': 'k',
+    'std': styling.offblack,
     'dev': 'r',
     'msc': 'b',
     'Depression': '#9b19f5',
@@ -93,3 +95,16 @@ def plot_pulse_hist(histograms, index_N, index_t, dt, figsize=(10,15), grid=Fals
         return fig, axs, cb, orders
     else:
         return fig, axs, cb
+
+def alpha_to_color(c, alpha, bg='white'):
+    c = np.asarray(colorConverter.to_rgb(c))
+    bg = np.asarray(colorConverter.to_rgb(bg))
+    rgb = (1-alpha)*bg + alpha*c
+    return rgb
+
+def fill_ratios(*ratios, to=100):
+    ratios = np.asarray(ratios)
+    total = ratios[ratios>0].sum()
+    remainder = to-total
+    ratios[ratios<0] = remainder / (ratios<0).sum()
+    return ratios

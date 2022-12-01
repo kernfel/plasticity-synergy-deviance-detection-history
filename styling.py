@@ -19,6 +19,7 @@ sns.set_theme(style='ticks', font_scale=0.75, rc={
     'axes.titlepad': 4,
     'grid.linewidth': 0.4,
     'lines.linewidth': 0.5,
+    'patch.linewidth': 0.5,
     'legend.fontsize': 8,
     'legend.title_fontsize': 9,
     'xtick.labelsize': 6,
@@ -56,7 +57,8 @@ sns.set_theme(style='ticks', font_scale=0.75, rc={
     'axes.edgecolor': offblack,
     'axes.labelcolor': offblack,
     'xtick.color': offblack,
-    'ytick.color': offblack
+    'ytick.color': offblack,
 })
 
 label_kwargs = {'fontsize': 12, 'fontweight': 'bold'}
+annotation_kwargs = {'fontsize': 8}
