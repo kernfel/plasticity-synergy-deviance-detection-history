@@ -23,11 +23,13 @@ def get_voltages(params, dynamics, overflow=None):
     threshold = ensure_unit(dynamics['th_adapt'], volt)
     synapses = ensure_unit(dynamics['vsyn'], volt) + depression  # vsyn + depr = vsyn + u-v = usyn
     reset = ensure_unit(dynamics['v'] - dynamics['vsyn'], volt) - params['v_rest']
+    vm = ensure_unit(dynamics['v'], volt)
     return {
         'Depression': depression,
         'Threshold': threshold,
         'Synapses': synapses,
-        'Reset': reset}
+        'Reset': reset,
+        'Vm': vm}
 
 
 def get_voltage_histograms(params, rundata, overflow=None):
