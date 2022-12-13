@@ -90,7 +90,7 @@ def get_stimulated(X, Y, Xstim, Ystim, params):
 
 def get_distance_to_stim(stimid, W, X, Y, params):
     Wb = W>0
-    d = np.zeros_like(X, int)
+    d = np.zeros(X.shape, int)
     Xstim, Ystim = create_stimulus_locations(params)
     d[get_stimulated(X, Y, Xstim, Ystim, params)[stimid]] = 1
     for i in range(2, 10):
