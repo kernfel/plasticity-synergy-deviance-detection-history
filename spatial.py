@@ -87,3 +87,19 @@ def get_stimulated(X, Y, Xstim, Ystim, params):
         sorted = np.argsort(dist)
         idx[i] = sorted[:params['neurons_per_stim']]
     return idx
+
+def get_distance_to_stim(stimid, W, X, Y, params):
+    Wb = W>0
+    d = np.zeros_like(X, int)
+    Xstim, Ystim = create_stimulus_locations(params)
+    d[get_stimulated(X, Y, Xstim, Ystim, params)[stimid]] = 1
+    for i in range(2, 10):
+        pre = (d == i-1) & (np.arange(len(d)) < params['N_exc'])
+        post = np.unique(np.nonzero(Wb[pre])[1])
+        for p in post:
+            if d[p] == 0:
+                d[p] = i
+        if np.sum(d==0) == 0:
+            break
+    d -= 1
+    return d
