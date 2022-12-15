@@ -115,9 +115,9 @@
 
 We modeled neurons as leaky integrate-and-fire units whose membrane potential $V_m$ at time $t$ followed
 \begin{equation}
-    \tau_m \frac{dV_m}{dt} = (v_{rest}-V_m) + I_{syn}(t)
+    \tau_m \frac{dV_m}{dt} = (V_{rest}-V_m) + I_{syn}(t)
 \end{equation}
-with $tau_m = 30$~ms the membrane time constant and $v_{rest} = -60$~mV the resting membrane potential. Synaptic currents were modeled in a conductance-based manner, following
+with $tau_m = 30$~ms the membrane time constant and $V_{rest} = -60$~mV the resting membrane potential. Synaptic currents were modeled in a conductance-based manner, following
 \begin{equation}
     I_{syn} = g_e(E_e-V_m) + g_i(E_i-V_m)
 \end{equation}
@@ -134,7 +134,7 @@ Excitatory, but not inhibitory, synapses were subject to short-term depression (
 \end{equation}
 with recovery time constant $\tau_x = 150$~ms and release fraction $U = 0.4$.
 
-When a neuron's membrane potential reached the firing threshold $v_\theta$, a spike was emitted, and the potential was clamped to $V_m = v_{reset} = -74$~mV for a fixed refractory period of 3~ms (excitatory neurons). Inhibitory neurons were modeled as fast-spiking cells with a refractory period of 2~ms and a constant firing threshold $v_\theta = \theta_0 = -54$~mV \refp{Mensi2012-au}. In contrast, excitatory neurons were modeled with threshold adaptation (TA) as in \cite{Teeter2018-iz}, following
+When a neuron's membrane potential reached the firing threshold $v_\theta$, a spike was emitted, and the potential was clamped to $V_m = V_{reset} = -74$~mV for a fixed refractory period of 3~ms (excitatory neurons). Inhibitory neurons were modeled as fast-spiking cells with a refractory period of 2~ms and a constant firing threshold $v_\theta = \theta_0 = -54$~mV \refp{Mensi2012-au}. In contrast, excitatory neurons were modeled with threshold adaptation (TA) as in \cite{Teeter2018-iz}, following
 \begin{align}
     v_\theta &= \theta_0 + V_{TA}(t) \nonumber \\
     \tau_{\theta} \frac{dV_{TA}}{dt} &= -V_{TA} + \hat{\theta} \delta(t - \hat{t}) \label{eqn-TA}
@@ -222,7 +222,7 @@ To assess the difference in synaptic currents in a way that allowed direct compa
 \textbf{b} Target trial average of the threshold adaptation voltage $V_{TA}$, with axes, neuron order and columns as in panel a.
 \textbf{c} Target trial average of the membrane potential $V_m$, with axes, neuron order and columns as in panel a. The first 10 ms of the neurons under direct stimulation are masked out to avoid saturation of the color mask.
 \textbf{d} Relationship across excitatory neurons of the sample network between the contrast (dev - msc) in $V_{TA}$ at the start of target trials and the contrast in average number of spikes fired in target trials, and associated linear regression.
-\textbf{e} Network-wide mean contrast (dev - msc) in $V_{TA}$ across networks and stimuli, plotted against the Pearson correlation coefficients $\rho$ of the relationship shown in the previous panel ($\\Delta V_{TA}$ vs response size contrast across excitatory neurons). Each marker corresponds to one network and target stimulus. Red markers indicate a significant correlation (p < 0.05). Inset histograms show the distribution of the corresponding values, with orange portions indicating the 95\% confidence interval of the median, calculated by bootstrap with 10000 iterations.
+\textbf{e} Network-wide mean contrast (dev - msc) in $V_{TA}$ across networks and stimuli, plotted against the Pearson correlation coefficients $\rho$ of the relationship shown in the previous panel ($\Delta V_{TA}$ vs response size contrast across excitatory neurons). Each marker corresponds to one network and target stimulus. Red markers indicate a significant correlation (p < 0.05). Inset histograms show the distribution of the corresponding values, with orange portions indicating the 95\% confidence interval of the median, calculated by bootstrap with 10000 iterations.
 \textbf{f} In the sample network, contribution of the contrast in $V_{TA}$ and $V_m$ to bins with increased firing in dev (i.e., positive/red bins in the spike probability contrast, panel a), weighted by that same contrast.
 \textbf{g} Contribution of $V_{TA}$ relative to the sum of the absolute values of the weighted contributions in panel f.
 \textbf{h} Relative contribution of $V_{TA}$ across networks and stimuli, showing median (solid line) and inter-quartile range (shaded area)
@@ -249,7 +249,7 @@ This finding held across networks and stimuli, as shown in Figure \ref{fig5}d, w
 \textbf{a} $V_{TA}$ at the start of A trials (mean over trials) in the sample network, with each neuron shown in its spatial location. Left and middle column, raw averages for dev and msc sequences, respectively; right column, contrast between dev and msc averages. A and B stimulus locations for this and following figures are highlighted in the left plot; see Figure \ref{fig1} for the locations of the remaining stimuli used in the msc sequence.
 \textbf{b} Average response (in spikes per trial) to non-target trials (B in dev, B, C, D, and E in msc). Columns are arranged as in panel a.
 \textbf{c} Relationship across excitatory neurons of the sample network between the contrast (dev - msc) in average number of spikes fired in response to non-target stimulation and the contrast in $V_{TA}$ at the start of target trials, and associated linear regression.
-\textbf{d} Network-wide mean contrast (dev - msc) in the non-target response magnitude across networks and stimuli, plotted against the Pearson correlation coefficients $\rho$ of the relationship shown in the previous panel (non-target response size contrast vs $\\Delta V_{TA}$ across excitatory neurons). Each marker corresponds to one network and target stimulus. Red markers indicate a significant correlation (p < 0.05). Inset histograms show the distribution of the corresponding values, with orange portions indicating the 95\% confidence interval of the median, calculated by bootstrap with 10000 iterations
+\textbf{d} Network-wide mean contrast (dev - msc) in the non-target response magnitude across networks and stimuli, plotted against the Pearson correlation coefficients $\rho$ of the relationship shown in the previous panel (non-target response size contrast vs $\Delta V_{TA}$ across excitatory neurons). Each marker corresponds to one network and target stimulus. Red markers indicate a significant correlation (p < 0.05). Inset histograms show the distribution of the corresponding values, with orange portions indicating the 95\% confidence interval of the median, calculated by bootstrap with 10000 iterations
 
 \begin{figure*}%
     \centering
