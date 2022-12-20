@@ -3,6 +3,8 @@ import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.colors import colorConverter
 from brian2.units import msecond
+import scipy.stats as stats
+import seaborn as sns
 import styling
 
 
@@ -110,3 +112,31 @@ def fill_ratios(*ratios, to=100):
     remainder = to-total
     ratios[ratios<0] = remainder / (ratios<0).sum()
     return ratios
+
+def inset_hist(ax, data, x=True, median_color='C1'):
+    if x:
+        y = ax.get_ylim()
+        ax.set_ylim(top=y[1] + .1*(y[1]-y[0]))
+        tx = ax.twinx()
+    else:
+        y = ax.get_xlim()
+        ax.set_xlim(right=y[1] + .1*(y[1]-y[0]))
+        tx = ax.twiny()
+    binned, bins, *_ = tx.hist(data, 20, color='grey', histtype='stepfilled', edgecolor='dimgrey', orientation='vertical' if x else 'horizontal')
+    ci = stats.bootstrap([data], np.median, n_resamples=10000)
+    lo, hi = ci.confidence_interval
+    bsize = np.diff(bins)[0]
+    mask = (bins > lo - bsize) & (bins < hi + bsize)
+    y = bins[mask]
+    y[0], y[-1] = lo, hi
+
+    if x:
+        tx.fill_between(y, binned[mask[1:]], step='pre', ec='dimgrey', fc=median_color)
+        tx.set_ylim(bottom=-10*binned.max())
+        tx.set_yticks([])
+    else:
+        tx.fill_betweenx(y, binned[mask[1:]], step='pre', ec='dimgrey', fc=median_color)
+        tx.set_xlim(left=-10*binned.max())
+        tx.set_xticks([])
+    sns.despine(ax=tx)
+    return tx
