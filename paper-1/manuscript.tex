@@ -217,7 +217,7 @@ To assess the difference in synaptic currents in a way that allowed direct compa
     \caption{}
     \label{fig4}
 \end{figure*}
-\textbf{Fig. 4} Responses and threshold adaptation with TA only.
+\textbf{Fig. 4} Responses to dev target trials are larger due to lower $V_{TA}$.
 \textbf{a} Target trial average post-stimulus spike histogram in the sample network, showing trial time along the horizontal axis, and neurons along the vertical, sorted by the time of the first recorded spike across all trials and conditions. Left and middle column, target trials in dev sequence and msc sequence, respectively; right column, contrast between these two.
 \textbf{b} Target trial average of the threshold adaptation voltage $V_{TA}$, with axes, neuron order and columns as in panel a.
 \textbf{c} Target trial average of the membrane potential $V_m$, with axes, neuron order and columns as in panel a. The first 10 ms of the neurons under direct stimulation are masked out to avoid saturation of the color mask.
@@ -245,7 +245,7 @@ This finding held across networks and stimuli, as shown in Figure \ref{fig5}d, w
     \caption{}
     \label{fig5}
 \end{figure*}
-\textbf{Fig. 5} Non-target response magnitude determines thresholds.
+\textbf{Fig. 5} Lower $V_{TA}$ in dev is a consequence of lower dev non-target response magnitude.
 \textbf{a} $V_{TA}$ at the start of A trials (mean over trials) in the sample network, with each neuron shown in its spatial location. Left and middle column, raw averages for dev and msc sequences, respectively; right column, contrast between dev and msc averages. A and B stimulus locations for this and following figures are highlighted in the left plot; see Figure \ref{fig1} for the locations of the remaining stimuli used in the msc sequence.
 \textbf{b} Average response (in spikes per trial) to non-target trials (B in dev, B, C, D, and E in msc). Columns are arranged as in panel a.
 \textbf{c} Relationship across excitatory neurons of the sample network between the contrast (dev - msc) in average number of spikes fired in response to non-target stimulation and the contrast in $V_{TA}$ at the start of target trials, and associated linear regression.
@@ -257,7 +257,7 @@ This finding held across networks and stimuli, as shown in Figure \ref{fig5}d, w
     \caption{}
     \label{fig6}
 \end{figure*}
-\textbf{Fig. 6} Stimulus replacement and adaptation both lead to a reduced dev non-target response.
+\textbf{Fig. 6} Dev non-target responses are reduced due to adaptation.
 \textbf{a} Non-target response contrasts in the sample network: The replacement contrast (top right) compares the response to B in msc (top left) to all non-target responses in msc (top center). The adaptation contrast (bottom right) compares the response to B in dev (bottom left) to the response to B in msc (bottom center). Both contrasts together add up to the non-target contrast (dev - msc) shown in Figure \ref{fig5}b. Note that the contrast column (right) shares a color scale to allow a direct comparison.
 \textbf{b} Network-wide mean replacement (left) and adaptation (right) contrasts across networks and stimuli, as well as the mean replacement contrast filtered for neurons near B, i.e., neurons within one excitatory synapse of the neurons under direct stimulation of B (center).
 \textbf{c} Mean $V_{TA}$ contrast (dev - msc) at the start of A trials, filtered for neurons near B. Each marker corresponds to one network; the sample network is highlighted in red. The histogram in the background shows the distribution of the data, with the orange portion indicating the 95\% confidence interval of the median, calculated by bootstrap with 10000 iterations
@@ -289,7 +289,7 @@ This pattern was reflected also in the aggregate across networks and stimuli. Fi
     \caption{}
     \label{fig7}
 \end{figure*}
-\textbf{Fig. 7} Adding STD to the model enhances the effect of TA.
+\textbf{Fig. 7} Adding STD to the model enhances the direct effect of TA.
 \textbf{a} Contrast (dev - msc) of the response to A, in terms of mean number of spikes per trial, in the sample network, with each neuron shown in its spatial location. Left and middle column, full model with STD and TA, and ablated model with only TA, respectively. Right column, subtraction of these two. Stimulus locations are as shown in Figure \ref{fig5}a.
 \textbf{b} Contrast of mean $V_{TA}$ at the start of target trials, in columns as in panel a.
 \textbf{c} Contrast of the response to non-target stimuli, in columns as in panel a.
@@ -314,7 +314,7 @@ Notice that $D$ is measured in volts due to scaling with $k$, and is therefore r
     \caption{}
     \label{fig8}
 \end{figure*}
-\textbf{Fig. 8} Estimated STD-mediated depression $D$ has small direct effects.
+\textbf{Fig. 8} In the full model, STD reduces dev non-target and increases dev target responses relative to msc.
 \textbf{a} Average depression $D$ in target (A) trials (top row) and B trials (bottom row) in the dev (left) and msc sequence (center), and their contrast (right). The color scale is shared across columns (and between dev and msc) for direct comparability.
 \textbf{b} Statistics across networks and stimuli of the contrast (dev - msc) in $D$ in A trials (left) and B trials (right)
 \textbf{c} Relationship across neurons of the sample network between the contrast (dev - msc) in $D^S$ and the contrast in average number of spikes fired in $S$ trials, and associated linear regression. Left, target trials; right, B trials.
