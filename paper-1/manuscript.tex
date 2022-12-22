@@ -257,21 +257,26 @@ This finding held across networks and stimuli, as shown in Figure \ref{fig5}d, w
     \caption{}
     \label{fig6}
 \end{figure*}
+% TODO 6: Expand c, show early/late in space. Consider punting a,b to Suppl.
+% TODO 5-8: Re-label stim locations once per figure
 \textbf{Fig. 6} Dev non-target responses are reduced due to adaptation, which is caused by greater activity in the early responders to B.
 \textbf{a} Non-target response contrasts in the sample network: The replacement contrast (top right) compares the response to B in msc (top left) to all non-target responses, including B, in msc (top center). The adaptation contrast (bottom right) compares the response to B in dev (bottom left) to the response to B in msc (bottom center). Both contrasts together add up to the non-target contrast (dev - msc) shown in Figure \ref{fig5}b. Note that the contrast column (right) shares a color scale to allow direct comparison.
 \textbf{b} Network-wide mean replacement and adaptation contrasts across networks and stimuli.
+% TODO 6c: use V_TA before B, not A
 \textbf{c} Relationship across networks and stimuli between the replacement contrast and the contrast in $V_{TA}$ at the start of A trials, and associated linear regression. For both measures, only the first 100 neurons to respond to stimulation by B in any condition were included. Each marker corresponds to one network and target stimulus.
 
+% TODO rev Fig6 text
 Finally, we examined the cause of the reduced response in non-target trials. Going from the msc sequence to the dev sequence, two things change: Firstly, stimulations with non-target C, D and E are replaced with B, which would cause different responses even in the absence of adaptation. Secondly, the more frequent presentation of B changes adaptation, likely reducing the average response to B.
 In order to separate these two, we split the non-target contrast shown in Figure \ref{fig5}b into two components: a replacement effect, contrasting the response to B in the msc sequence with the response to all non-target stimuli in the same sequence; and an adaptation effect, contrasting the response to B in dev with the response to B in msc. For the sample network, these contrasts are shown in Figure \ref{fig6}a. Unsurprisingly, replacement yielded a decreased response near the stimulation sites for C, D and E, and an increased response in areas near the stimulation site for B. By contrast, adaptation caused a decreased response in virtually the entire network, particularly in the vicinity of the stimulation site for B.
 
 Across networks and stimuli (Figure \ref{fig6}b), we saw a wide range of replacement effects, including both increased and decreased firing, likely as a result of differing sensitivities of the networks to the various non-target stimuli. On average, stimulus replacement did not have a significant effect (t = -0.255, p = 0.799; two-sided t-test). In contrast, adaptation yielded a reduced response on average (t = -9.01, p = 2.02e-15; one-sided t-test), indicating that the more frequent presentation of B indeed lowered the network's response to this stimulus.
 
-Finally, given the clear spatial pattern exhibited by the replacement effect in the sample network, we surmised that adaptation is driven mainly by neurons close to the stimulation site B responding more frequently due to the more frequent presentation of the stimulus. To show this, we first identified all neurons located within a single excitatory synapse of the stimulated neurons (cf. Figure \ref{1}c), and calculated the average replacement effect for these alone. In this subpopulation, replacement yielded a clear response increase, shown in the central box of Figure \ref{fig6}b (t = 8.21, p = 1.5e-13; one-sided t-test). As shown in Figure \ref{fig6}c, this response increase directly translated into elevated thresholds in dev trials compared to msc (t = 5.01, p = 9.59e-07).
+Finally, given the clear spatial pattern exhibited by the replacement effect in the sample network, we surmised that adaptation is driven mainly by neurons close to the stimulation site B responding more frequently due to the more frequent presentation of the stimulus. To show this, we first identified all neurons located within a single excitatory synapse of the stimulated neurons (cf. Figure \ref{fig1}c), and calculated the average replacement effect for these alone. In this subpopulation, replacement yielded a clear response increase, shown in the central box of Figure \ref{fig6}b (t = 8.21, p = 1.5e-13; one-sided t-test). As shown in Figure \ref{fig6}c, this response increase directly translated into elevated thresholds in dev trials compared to msc (t = 5.01, p = 9.59e-07).
 
 Earlier, we showed that the early response is strongly influenced by TA (Figure \ref{fig4}h). Here, we showed that $V_{TA}$ near the stimulation site was increased in dev as a result of the more frequent presentation of B. We posit that this increase in TA affects the early response, reducing the response further downstream and freeing up the rest of the network to respond more strongly to the infrequent target stimulus.
 
 To conclude, TA plays two complementary roles in deviance detection, affecting the standard and deviant response separately: In its first role, as we have shown with the adaptation contrast above, TA reduces the response to frequently presented stimuli regardless of context, leading to a stronger response to infrequently presented stimuli (SSA). Since this happens without the need for large-scale adaptation -- only a small fraction of the network near the stimulation site adapts strongly to frequently presented inputs -- the network as a whole is allowed to relax in the oddball condition. In its second role, TA causes network-wide adaptation in the control condition, where many different stimuli are presented, all of which are infrequently presented and therefore able to evoke large responses. Deviant detection then arises as a relief from this blanket suppression, or as a result of adaptation shifting from the entire network to a small region around the frequently presented standard.
+% END TODO
 
 \subsection{The role of STD in deviance detection}\label{sec-std}
 
@@ -289,6 +294,10 @@ This pattern was reflected also in the aggregate across networks and stimuli. Fi
     \caption{}
     \label{fig7}
 \end{figure*}
+% TODO 7: Add F6 conclusion to complete the story
+% Consider alternative ways of presenting the left side without using so much space/mental effort (stats?)
+% a-c: Add (dev-msc) to yaxis label
+% d,e: Mark significance
 \textbf{Fig. 7} Adding STD to the model enhances the direct effect of TA.
 \textbf{a} Contrast (dev - msc) of the response to A, in terms of mean number of spikes per trial, in the sample network, with each neuron shown in its spatial location. Left and middle column, full model with STD and TA, and ablated model with only TA, respectively. Right column, subtraction of these two. Stimulus locations are as shown in Figure \ref{fig5}a.
 \textbf{b} Contrast of mean $V_{TA}$ at the start of target trials, in columns as in panel a.
@@ -332,6 +341,38 @@ To sum up, in the full model, STD acted in much the same way as TA, causing both
 
 \section{Discussion}\label{sec-discussion}
 
+\begin{figure*}%
+    \centering
+    \includegraphics{fig9.pdf}
+    \caption{}
+    \label{fig9}
+\end{figure*}
+% TODO 9: Needs to be more generic, not specific to the task. Show the process, step by step.
+
+% No tuning required to get DDI!
+
+% Culture, rats, humans...
+
+% Response of a 2 $\times$ 4~mm neuronal cell culture on a multi-electrode array, adapted from \cite{Kubota2021-dx}. Curves represent the average number of spikes per electrode in each 10~ms bin in response to target stimulation in the indicated sequence. Unlike in our study, oddball sequences here were split 10\%/90\%, and 10 equally frequent stimuli were used for the msc sequence.
+
+% adaptation vs deviance detection, in the context of pred coding, means DD is derived from some pred/err interaction, cf Fong+20
+% deviant-alone always highest, cf. Taaseh2011-gg
+
+% Replacement vs adaptation is not a clean separation, since $V_{TA}$ is affected by replacement, but modulates adaptation
+
+% The prime effect of TA (reduce std by local suppression, relieve global suppression for a larger dev) is repeated with STD, in exactly the same way, just weaker.
+% What makes the two synergise is precisely this symmetry: STD reduces std by local suppression, which relieves not only STD-related global suppression, but also TA-related global suppression. And, of course, vice versa!
+% On the other hand, theoretical expectations lead us to expect competition to occur in the area of local suppression: Such suppression has diminishing returns; in the extreme case, if one mechanism reduces the response to zero, the other mechanism is left without room for further reductions. Or: If each mechanism independently cuts the response in half, then we should expect a quarter of the response to remain
+
+% Spatial overlap
+% Structure
+% Omission
+% Time (ISI <> tau)
+% Neurobiology
+% long-term plasticity
+% Spontaneous activity
+% Prediction signals that cancel expected inputs would reduce adaptation
+% Testable predictions. Eg: Block NMDA, spontaneous activity, TA-related channels; easier: early vs late subpopulations
 
 
 
