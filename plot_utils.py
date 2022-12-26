@@ -113,16 +113,20 @@ def fill_ratios(*ratios, to=100):
     ratios[ratios<0] = remainder / (ratios<0).sum()
     return ratios
 
-def inset_hist(ax, data, x=True, median_color='C1'):
+def inset_hist(ax, data, x=True, median_color='C1', rescale=True, **kwargs):
     if x:
         y = ax.get_ylim()
-        ax.set_ylim(top=y[1] + .1*(y[1]-y[0]))
+        if rescale:
+            ax.set_ylim(top=y[1] + .1*(y[1]-y[0]))
         tx = ax.twinx()
     else:
         y = ax.get_xlim()
-        ax.set_xlim(right=y[1] + .1*(y[1]-y[0]))
+        if rescale:
+            ax.set_xlim(right=y[1] + .1*(y[1]-y[0]))
         tx = ax.twiny()
-    binned, bins, *_ = tx.hist(data, 20, color='grey', histtype='stepfilled', edgecolor='dimgrey', orientation='vertical' if x else 'horizontal')
+    hargs = dict(color='grey', histtype='stepfilled', edgecolor='dimgrey', orientation='vertical' if x else 'horizontal')
+    hargs.update(**kwargs)
+    binned, bins, *_ = tx.hist(data, 20, **hargs)
     ci = stats.bootstrap([data], np.median, n_resamples=10000)
     lo, hi = ci.confidence_interval
     bsize = np.diff(bins)[0]
