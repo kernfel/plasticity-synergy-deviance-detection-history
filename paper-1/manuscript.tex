@@ -49,6 +49,7 @@
 \renewcommand{\R}[3][]{{}^{#1}_{}\!R^{#2}_{#3}}
 \renewcommand{\T}[3][]{{}^{#1}_{}T^{#2}_{#3}}
 \newcommand{\D}[3][]{{}^{#1}_{}\!D^{#2}_{#3}}
+\newcommand{\mean}[1]{\overline{#1}}
 
 %%%%%=============================================================================%%%%
 %%%%  Remarks: This template is provided to aid authors with the preparation
@@ -175,7 +176,11 @@ In order to disentangle the effects of STD and TA, we ran all simulations in fou
 
 We present most of our analysis at two levels: We first detail the processes leading to deviance detection on a sample network, then confirm the highlighted trends statistically with reference to the full set of 120 networks and stimulus assignments. The sample network was chosen to be roughly representative of the population as follows: We assessed each network's average response to stimulation with A and B in the \msc{} sequence and calculated z-scores with respect to the population. We considered only networks whose absolute z-score was less than 1 for both A and B responses, then hand-picked a sample network and stimulus assignment that exhibited both an increased deviance detection index (see Equation \ref{eqn-ddi} below) in STD+TA over TA only, and greater \msc{} than \std{} responses in both STD+TA and TA only conditions.
 
-% TODO: Notation.
+\subsection{Notation}\label{sec-notation}
+
+Throughout this paper, we refer to three main quantities of interest: the stimulus response $\R{}{}$ defined below, the threshold adaptation value $\T{}{}$ defined in Equation \ref{eqn-TA}, and the short-term depression effect $\D{}{}$, which is introduced later in Equation \ref{eqn-D}. We employ sub- and superscripts to identify the precise quantity as follows, using $\R{}{}$ for illustration: $\R[seq]{X}{p}$ refers to the response of neuron(s) $p$, averaged across all trials of type $X$ in the sequence $seq$. Where $p$ does not identify individual neurons (e.g., $i$ or $j$), but rather a subpopulation (e.g., $exc$) or the whole network (no index), this refers to the median (of the individual quantity $\R[seq]{X}{i}$) across the indicated set of neurons. The trial type $X$ is either $A$ or $B$, referring to trials with stimulation at these sites, or $N$, indicating all \textbf{n}on-target trials B through E. Finally, we use the notation $\Delta \R{}{}$ to refer to the sequence contrast $\R[dev]{}{} - \R[msc]{}{}$, and $\mean{\R{}{p}}$ to indicate the mean, rather than median, of the individual quantities in a population $p$.
+
+We define the response $\R{X}{i}$ as the mean spike count of neuron $i$ across time bins in trials of type $X$. Almost equivalently, we define $\T{X}{i}$ (and $\D{}{}$ analogously) as the mean across trials of type $X$ of $\T{}{i}(t=0)$, i.e., the average TA voltage at the beginning of trials, immediately before stimulation.
 
 \section{Results}\label{sec-results}
 
@@ -330,7 +335,7 @@ To show that STD being carried over between repeated trials was responsible for 
 
 A measure of STD is necessarily activity-dependent -- a postsynaptic neuron's membrane potential is driven only by presynaptic partners that fire -- so it must be calculated based on observed activity. In order to respect this notion while at the same time minimizing the influence of activity differences between sequences, we used the average response $\R{S}{j} = \frac{1}{3} \sum_{seq \in (std, dev, msc)} \R[seq]{S}{j}$ of a neuron $j$ to a given stimulus $S$ as a measure of the presynaptic drive. Before depression, a single excitatory presynaptic spike evokes a postsynaptic potential (EPSP) peaking at approximately $k = 1.4$ mV at $V_m = V_{rest}$ (recall that $w = 1$ for all synapses), and STD linearly scales this EPSP by presynaptic $x_j$. Thus, we estimated the average peak EPSP evoked by a spike in presynaptic neuron $j$ as $\R{S}{j} k x_j^S$, where we ignored added depression due to repeated spikes within a trial and instead defined $x_j^S$ as the mean depression at the start of trials. Finally, summing over presynaptic neurons, we estimated the peak EPSP lost to depression in a given neuron $i$ as
 \begin{equation}
-    \D{S}{i} = \sum_{j \in pre} \R{S}{j} k (1-x_j^S)
+    \D{S}{i} = \sum_{j \in pre} \R{S}{j} k (1-x_j^S) \label{eqn-D}
 \end{equation}
 Notice that $\D{}{}$ is measured in volts due to scaling with $k$, and is therefore roughly comparable to $\T{}{}$, albeit more approximate.
 
