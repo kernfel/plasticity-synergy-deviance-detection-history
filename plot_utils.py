@@ -5,6 +5,7 @@ from matplotlib.colors import colorConverter
 from brian2.units import msecond
 import scipy.stats as stats
 import seaborn as sns
+import string
 import styling
 
 
@@ -19,10 +20,27 @@ colors = {
     'Vm': 'orange'
 }
 
+def _quantity_label(core, seq, stim, index, mean):
+    template = string.Template(r'{}^{$seq}_{}$core^{$stim}_{$index}')
+    label = template.substitute(core=core, seq=seq, stim=stim, index=index)
+    if mean:
+        label = string.Template(r'\overline{$label}').substitute(label=label)
+    return label
+
+# Note: Negative space before R and D omitted for better kerning on \Delta \[RD] in the font used in mpl.
+def R(seq='', stim='', index='', mean=False):
+    return _quantity_label('R', seq, stim, index, mean)
+
+def T(seq='', stim='', index='', mean=False):
+    return _quantity_label('T', seq, stim, index, mean)
+
+def D(seq='', stim='', index='', mean=False):
+    return _quantity_label('D', seq, stim, index, mean)
+
 labels = {
     'pspike': 'Spike probability',
     'Depression': '$V_{STD}$ (mV)',
-    'Threshold': '$V_{TA}$ (mV)',
+    'Threshold': f'${T()}$ (mV)',
     'Synapses': '$V_{syn}$ (mV)',
     'Reset': '$V_{reset}$ (mV)',
     'Vm': '$V_m$ (mV)'
