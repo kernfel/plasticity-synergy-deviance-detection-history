@@ -324,8 +324,7 @@ This naturally raises the question of why, with the addition of STD, the non-tar
 
 We had good reasons for this assumption: A priori, updates to the spike-triggered depression variable $x_j$ (cf. Equation \ref{eqn-xsyn}) would decay to a negligible $e^\frac{-1 s}{\tau_x} = 0.0013$ times the original value within two trials, making it unlikely that inputs separated by intervening trials could be "remembered" in the network. Conversely, the frequently presented stimulus B may have been able to lead to a build-up of depression strong enough to suppress its own response.
 
-To show in the sample network that the model does not maintain a history beyond the most recent trial, we correlated the number of spikes in \dev{} target trials with $x_j$ at the start of later trials (cf. Equation \ref{eqn-xsyn}) across excitatory neurons. We found that, while the correlation was strong and very clearly positive in the trial immediately following target (Pearson's $\rho$ = -0.984, p = 0; Wald test, n = 800), it was almost completely lost by the next trial ($\rho$ = -0.0525, p = 0.138) under the combined influence of decay and unrelated activity in the intervening trial.
-% TODO: SFig for this.
+To show in the sample network that the model does not maintain a history beyond the most recent trial, we correlated the number of spikes in \dev{} target trials with $x_j$ at the start of later trials (cf. Equation \ref{eqn-xsyn}) across excitatory neurons. We found that, while the correlation was strong and very clearly positive in the trial immediately following target (Pearson's $\rho$ = -0.984, p = 0; Wald test, n = 800), it was almost completely lost by the next trial ($\rho$ = -0.0525, p = 0.138) under the combined influence of decay and unrelated activity in the intervening trial. Similar behavior was also seen in the \msc{} sequence, as shown in Figure \ref{sfig-STD-correlation-decay}.
 
 To show that STD being carried over between repeated trials was responsible for the reduction of non-target \dev{} responses relative to \msc{}, however, we needed to estimate the extent to which activity of a given neuron (or, alternatively, its membrane potential $V_m$) was affected by changes in STD. Unlike $\T{}{}$, which directly affects the neuron to which the value belongs, $x_j$ exerts its effects on the other side of a synapse. Therefore, we devised a measure $\D{}{}$ to estimate the postsynaptic impact of STD in terms of membrane potential lost, mirroring the effect of $\T{}{}$ in the sense that decreasing $V_m$ and increasing the firing threshold both increase the depolarization necessary to make a neuron fire.
 
@@ -456,6 +455,14 @@ Not applicable.
     \caption{}
     \label{sfig6}
 \end{figure*}
+
+\begin{figure}%
+    \centering
+    \includegraphics{sfig-STD-correlation-decay.pdf}
+    \caption{}
+    \label{sfig-STD-correlation-decay}
+\end{figure*}
+\textbf{Figure S?} The STD variable $x_i$ only correlates with the activity of the immediately preceding trial. Each marker represents the coefficient $\rho$ of the Pearson correlation between the spike counts in a target trial and the corresponding values $x_i$ at the beginning of the immediately following trial ($\Delta$ trials = 1) or after one intervening trial ($\Delta$ trials = 2). Recall that $x$ is reduced upon spiking, which implies that an effective correlation is negative. Color represents the p-value of the alternative hypothesis that $\rho < 0$. Horizontal lines indicate the median $\rho$ and p. Horizontal jitter is introduced to aid visual separability of the markers.
 
 \begin{figure*}%
     \centering
