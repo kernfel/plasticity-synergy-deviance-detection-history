@@ -46,9 +46,9 @@
 \newcommand{\std}{\textit{std}}
 
 % Common notation
-\renewcommand{\R}[3][]{{}^{#1}_{}\!R^{#2}_{#3}}
-\renewcommand{\T}[3][]{{}^{#1}_{}T^{#2}_{#3}}
-\newcommand{\D}[3][]{{}^{#1}_{}\!D^{#2}_{#3}}
+\renewcommand{\R}[3][]{{}^{#1}_{}\!\mathbf{R}^{#2}_{#3}}
+\renewcommand{\T}[3][]{{}^{#1}_{}\mathbf{T}^{#2}_{#3}}
+\newcommand{\D}[3][]{{}^{#1}_{}\!\mathbf{D}^{#2}_{#3}}
 \newcommand{\mean}[1]{\overline{#1}}
 
 %%%%%=============================================================================%%%%
@@ -181,6 +181,8 @@ We present most of our analysis at two levels: We first detail the processes lea
 Throughout this paper, we refer to three main quantities of interest: the stimulus response magnitude $\R{}{}$, the threshold adaptation value $\T{}{}$, and the short-term depression value $\D{}{}$. We define the response $\R{X}{i}$ as the mean number of spikes fired by neuron $i$ across all trials of type $X$, i.e., the average response to $X$. We define $\T{X}{i}$ as the mean across trials of type $X$ of $\theta_i(t=0)$, i.e., the average TA voltage at the beginning of trials, immediately before stimulation. Lastly, the STD quantity $\D{X}{i}$ will be introduced later in Equation \ref{eqn-D}.
 
 We employ sub- and superscripts to identify the precise quantity as follows, using $\R{}{}$ for illustration: $\R[seq]{X}{p}$ refers to the response of neuron(s) $p$, averaged across all trials of type $X$ in the sequence $seq$. We use $p$ to either identify individual neurons (e.g., $i$ or $j$), or a subpopulation (e.g., $exc$) or the whole network (no index), in which case the designated quantity is the median (of the individual quantities $\R[seq]{X}{i}$) across the indicated set of neurons. The trial type $X$ is either $A$ or $B$, referring to trials with stimulation at these sites, or $N$, indicating all \textit{n}on-target trials B through E. Finally, we use the notation $\Delta \R{}{}$ to refer to the sequence contrast $\R[dev]{}{} - \R[msc]{}{}$, and $\mean{\R{}{p}}$ to indicate the mean, rather than median, of the individual quantities in a population $p$.
+
+For disambiguation, note that the quantity $\T{X}{i}$, regardless of sub- and superscripts, is always in bold math font, whereas the Wilcoxon statistic T is typeset in normal font.
 
 \section{Results}\label{sec-results}
 
