@@ -151,13 +151,15 @@ def inset_hist(ax, data, x=True, median_color='C1', rescale=True, **kwargs):
     mask = (bins > lo - bsize) & (bins < hi + bsize)
     y = bins[mask]
     y[0], y[-1] = lo, hi
+    x_in_ci = binned[mask[1:]].copy()
+    x_in_ci[0] = x_in_ci[1]
 
     if x:
-        tx.fill_between(y, binned[mask[1:]], step='pre', ec='dimgrey', fc=median_color)
+        tx.fill_between(y, x_in_ci, step='pre', ec='dimgrey', fc=median_color)
         tx.set_ylim(bottom=-10*binned.max())
         tx.set_yticks([])
     else:
-        tx.fill_betweenx(y, binned[mask[1:]], step='pre', ec='dimgrey', fc=median_color)
+        tx.fill_betweenx(y, x_in_ci, step='pre', ec='dimgrey', fc=median_color)
         tx.set_xlim(left=-10*binned.max())
         tx.set_xticks([])
     sns.despine(ax=tx)
