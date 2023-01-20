@@ -11,9 +11,9 @@ sns.set_theme(style='ticks', font_scale=0.75, rc={
     'text.usetex': False,
     'pdf.fonttype': 42,
     'ps.fonttype': 42,
-    'font.size': 8,
-    'axes.labelsize': 8,
-    'axes.titlesize': 9,
+    'font.size': 7,
+    'axes.labelsize': 7,
+    'axes.titlesize': 8,
     'axes.labelpad': 2,
     'axes.linewidth': 0.5,
     'axes.titlepad': 4,
@@ -21,7 +21,7 @@ sns.set_theme(style='ticks', font_scale=0.75, rc={
     'lines.linewidth': 0.5,
     'patch.linewidth': 0.5,
     'legend.fontsize': 6,
-    'legend.title_fontsize': 8,
+    'legend.title_fontsize': 7,
     'xtick.labelsize': 6,
     'ytick.labelsize': 6,
     'xtick.major.size': 2,
@@ -61,4 +61,4 @@ sns.set_theme(style='ticks', font_scale=0.75, rc={
 })
 
 label_kwargs = {'fontsize': 12, 'fontweight': 'bold'}
-annotation_kwargs = {'fontsize': 8}
+annotation_kwargs = {'fontsize': 7}
