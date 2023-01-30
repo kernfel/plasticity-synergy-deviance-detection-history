@@ -849,12 +849,12 @@
       %%\def\@oddhead{{\headerfont\includegraphics{springer-nature-logo}\hfill\leftmark\qquad\thepage}}%
       \def\@evenhead{%
       \vbox to 0pt{\vspace*{-39pt}%
-         \hbox to \hsize{\hfill Springer Nature 2021 \LaTeX\ template\hfill}}\par%%
-      \hspace*{-\textwidth}\hbox to \hsize{\headerfont\thepage\qquad\rightmark\hfill}}%
+         \hbox to \textwidth{\hfill Springer Nature 2021 \LaTeX\ template\hfill}}\par%%
+      \hspace*{-\textwidth}\hbox to \textwidth{\headerfont\thepage\qquad\rightmark\hfill}}%
       \def\@oddhead{%
       \vbox to 0pt{\vspace*{-39pt}%
-         \hbox to \hsize{\hfill Springer Nature 2021 \LaTeX\ template\hfill}}\par%%
-      \hspace*{-\textwidth}\hbox to \hsize{\headerfont\hfill\leftmark\qquad\thepage}}%
+         \hbox to \textwidth{\hfill Springer Nature 2021 \LaTeX\ template\hfill}}\par%%
+      \hspace*{-\textwidth}\hbox to \textwidth{\headerfont\hfill\leftmark\qquad\thepage}}%
       \let\@mkboth\markboth%
       }%
 
@@ -878,7 +878,7 @@
      %%\let\@oddhead\@empty\let\@evenhead\@empty%
       \def\@oddhead{%
       \vbox to 0pt{\vspace*{-38pt}%
-         \hbox to \hsize{\hfill Springer Nature 2021 \LaTeX\ template\hfill}}}%%
+         \hbox to \textwidth{\hfill Springer Nature 2021 \LaTeX\ template\hfill}}}%%
      \let\@evenhead\@oddhead%
      \def\@oddfoot{\vbox to 18pt{\vfill\reset@font\rmfamily\hfil\thepage\hfil}}%%
      \def\@evenfoot{}}%
