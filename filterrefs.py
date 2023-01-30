@@ -21,23 +21,24 @@ if __name__ == '__main__':
 
     minbib = []
     visited_keys = []
-    drop = False
-    print('Removed references from bib:\n')
+    drop = 0
     with open(bibfile) as bib:
         for line in bib.readlines():
             if line.startswith('@') and '{' in line:
                 key = line[line.find('{') + 1:].rstrip().rstrip(',')
                 if key not in keys:
-                    drop = True
-                    print(key)
+                    drop = -1
                 elif key not in visited_keys:
                     visited_keys.append(key)
             
             if not drop:
                 minbib.append(line)
             
-            if drop and line.startswith('}'):
-                drop = False
+            if drop:
+                if line.startswith('}'):
+                    drop = 1
+                elif drop > 0:
+                    drop -= 1
     
     with open(bibfile, 'w') as bib:
         bib.writelines(minbib)
