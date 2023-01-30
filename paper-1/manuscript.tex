@@ -120,6 +120,24 @@
 
 \section{Introduction}\label{sec-intro}
 
+Deviance detection (DD) is the ability of neural systems to identify statistically surprising sensory inputs or violations of established regularities and to respond to this surprise with an increased signal. Deviance detection is a critical component of any signal processing cascade, and is closely related to the concept of error signals in the predictive processing framework \citep{Bendixen2012-nx, Khouri2015-gr, Fong2020-em}. DD has been studied particularly in auditory processing with approaches from single-unit recordings \citep{Taaseh2011-gg} to EEG {Winkler2012-pr}. Impairments in DD have been reported in various disorders \citep{Fong2020-em}, including autism \citep{Schwartz2018-bc} and schizophrenia \citep{Tada2019-lj}, highlighting the need to better understand its mechanistic underpinnings.
+
+Existing models of DD focus on synaptic plasticity, either short-term \citep{Mill2011-ah, May2015-lt, Yarden2017-eh} or long-term \citep{Hertag2020-kc, Wacongne2012-ah}, and most models make use of strongly regimented network structure to harness lateral inhibition \citep{Garagnani2011-eu, Hertag2020-kc}, feedback inhibition \citep{Wacongne2012-ah}, or depression in feedforward pathways \citep{Mill2011-ah} as additional mechanisms to support DD. However, recent evidence from dissociated cell culture \citep{Kubota2021-dx} suggests that even randomly connected networks of cortical neurons are capable of deviance detection, implying that detailed network structure is not a requirement.
+
+Neuronal adaptation, i.e., changes in intrinsic neuronal sensitivity as opposed to changes to synaptic function, is a common phenomenon in excitatory neurons \citep{Sanchez-Vives2000-df, OLeary2010-ar, Sanchez-Aguilera2014-fd}. While neuronal rate adaptation has been successfully used to model SSA \citep{Garagnani2011-eu}, it has been suggested that this mechanism is incapable of producing true deviance detection due to a lack of stimulus sensitivity \citep{Yarden2017-eh}. However, to the extent that individual neurons are sensitive to different stimuli, we argue that neuronal plasticity is equally well placed to produce DD as synaptic plasticity.
+
+Here, we investigate how neuronal short-term plasticity, expressed as spike-triggered threshold adaptation, can lead to deviance detection. Specifically, we use a spatially constrained, randomly connected network of point neurons with threshold adaptation, and show that deviance detection emerges from this mechanism alone, requiring neither synaptic plasticity nor a tightly defined network structure. Furthermore, we model the conjunction of both neuronal and synaptic short-term plasticity, and study how these mechanisms interact within the network as it processes regular and irregular stimulus sequences.
+
+
+% Interactions between forms of plasticity:
+% Single-cell level, in physiology: Buonomano1998-hf
+% Single-cell modelled TA/STD interaction => oscillations, Mejias2011-rv
+% At a single synapse: Tsodyks1997-qt, Varela1997-nr, Hennig2008-sc, Mondal2022-av
+% Short / long, in physiology: Davies1991-kf, Iezzi2011-vb; in modelling Deperrois2020-sp
+% Sequence processing = different responses to repeats of the same input with STD/STF: cortical circuit model Buonomano1995-gq, hippocampus physiology Buonomano1997-ms
+% Gating/Filtering by balance of depression and facilitation: Anwar2017-qg, Mondal2022-av
+
+% Short-term plasticity as a memory mechanism: Jaaskelainen2011-cb
 
 \section{Methods}\label{sec-methods}
 
