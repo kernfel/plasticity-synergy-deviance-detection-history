@@ -52,35 +52,8 @@
 \newcommand{\mean}[1]{\overline{#1}}
 \newcommand{\Rhat}[3][]{{}^{#1}_{}\mathbf{\widehat{R}}^{#2}_{#3}}
 
-%%%%%=============================================================================%%%%
-%%%%  Remarks: This template is provided to aid authors with the preparation
-%%%%  of original research articles intended for submission to journals published 
-%%%%  by Springer Nature. The guidance has been prepared in partnership with 
-%%%%  production teams to conform to Springer Nature technical requirements. 
-%%%%  Editorial and presentation requirements differ among journal portfolios and 
-%%%%  research disciplines. You may find sections in this template are irrelevant 
-%%%%  to your work and are empowered to omit any such section if allowed by the 
-%%%%  journal you intend to submit to. The submission guidelines and policies 
-%%%%  of the journal take precedence. A detailed User Manual is available in the 
-%%%%  template package for technical guidance.
-%%%%%=============================================================================%%%%
-
 \jyear{2021}%
 
-%% as per the requirement new theorem styles can be included as shown below
-\theoremstyle{thmstyleone}%
-\newtheorem{theorem}{Theorem}%  meant for continuous numbers
-%%\newtheorem{theorem}{Theorem}[section]% meant for sectionwise numbers
-%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
-\newtheorem{proposition}[theorem]{Proposition}% 
-%%\newtheorem{proposition}{Proposition}% to get separate numbers for theorem and proposition etc.
-
-\theoremstyle{thmstyletwo}%
-\newtheorem{example}{Example}%
-\newtheorem{remark}{Remark}%
-
-\theoremstyle{thmstylethree}%
-\newtheorem{definition}{Definition}%
 
 \raggedbottom
 %%\unnumbered% uncomment this for unnumbered level heads
@@ -89,27 +62,11 @@
 
 \title{Short-term neuronal and synaptic plasticity act in synergy for deviance detection in spiking networks}
 
-%%=============================================================%%
-%% Prefix	-> \pfx{Dr}
-%% GivenName	-> \fnm{Joergen W.}
-%% Particle	-> \spfx{van der} -> surname prefix
-%% FamilyName	-> \sur{Ploeg}
-%% Suffix	-> \sfx{IV}
-%% NatureName	-> \tanm{Poet Laureate} -> Title after name
-%% Degrees	-> \dgr{MSc, PhD}
-%% \author*[1,2]{\pfx{Dr} \fnm{Joergen W.} \spfx{van der} \sur{Ploeg} \sfx{IV} \tanm{Poet Laureate} 
-%%                 \dgr{MSc, PhD}}\email{iauthor@gmail.com}
-%%=============================================================%%
-
 \author[1]{\fnm{Felix Benjamin} \sur{Kern} \orcidA{}}\email{kernfel@gmail.com}
 
 \author*[1]{\fnm{Zenas C.} \sur{Chao} \orcidB{}}\email{zenas.c.chao@gmail.com}
 
 \affil[1]{\orgdiv{International Research Center for Neurointelligence (WPI-IRCN)}, \orgname{The University of Tokyo}, \orgaddress{\city{Tokyo}, \country{Japan}}}
-
-%%==================================%%
-%% sample for unstructured abstract %%
-%%==================================%%
 
 \abstract{
     Sensory areas of cortex respond more strongly to infrequent stimuli when these violate previously established regularities, a phenomenon known as deviance detection (DD). Previous modeling work has mainly attempted to explain DD on the basis of synaptic plasticity and tightly constrained network structure. However, a large fraction of cortical neurons also exhibit intrinsic plasticity, an underexplored potential mechanism, and recent results show DD in dissociated neuronal culture, raising doubts about the necessity of network structure.
