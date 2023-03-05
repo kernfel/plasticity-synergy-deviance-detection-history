@@ -73,11 +73,7 @@
 \affil[1]{\orgdiv{International Research Center for Neurointelligence (WPI-IRCN)}, \orgname{The University of Tokyo}, \orgaddress{\city{Tokyo}, \country{Japan}}}
 
 \abstract{
-    Sensory areas of cortex respond more strongly to infrequent stimuli when these violate previously established regularities, a phenomenon known as deviance detection (DD). Previous modeling work has mainly attempted to explain DD on the basis of synaptic plasticity and tightly constrained network structure. However, a large fraction of cortical neurons also exhibit intrinsic plasticity, an underexplored potential mechanism.
-    Here, we investigate DD in a spiking neuronal model with simple spatially constrained connectivity and two types of short-term plasticity, fast synaptic short-term depression (STD) and slower threshold adaptation (TA). We probe the model with oddball sequences at an intermediate inter-stimulus interval and assess DD.
-    We find that TA alone is sufficient to generate DD signals and identify an interplay between suppression and its recovery as the underlying mechanism.
-    Further, we find that the full model with both STD and TA yields a DD signal that exceeds the sum of the DD signals in ablated models with either STD or TA turned off. We identify the cause of this in an interaction between the contribution of STD to the local suppression of neurons sensitive to the frequently presented stimulus, and the recovery of TA-derived global suppression across the network.
-    We suggest that similar interactions between various forms of plasticity are likely to shape how sensory networks process regularities.
+    
 }
 
 
@@ -87,24 +83,7 @@
 
 \section{Introduction}\label{sec-intro}
 
-Deviance detection (DD) is the ability of neural systems to identify statistically surprising sensory inputs or violations of established regularities and to respond to this surprise with an increased signal. Deviance detection is a critical component of any signal processing cascade and is closely related to the concept of error signals in the predictive processing framework \citep{Bendixen2012-nx, Khouri2015-gr, Fong2020-em}. DD has been studied particularly in auditory processing with approaches from single-unit recordings \citep{Taaseh2011-gg} to EEG \citep{Winkler2012-pr}. Impairments in DD have been reported in various disorders \citep{Fong2020-em}, including autism \citep{Schwartz2018-bc} and schizophrenia \citep{Tada2019-lj}, highlighting the need to better understand its mechanistic underpinnings.
 
-Existing models of DD place their primary focus on synaptic plasticity. While models using long-term plasticity have been proposed \citep{Wacongne2012-ah, Hertag2020-kc}, the rapid establishment of DD in vivo \citep{Taaseh2011-gg} suggests that fast-acting short-term plasticity mechanisms play a key role. Several models using synaptic short-term plasticity have been proposed \citep{Mill2011-ah, May2015-lt, Yarden2017-eh}, finding good agreement with physiological data.
-
-Neuronal plasticity, on the other hand, has largely been neglected in previous work, used as a mere afterthought in the neuron model \citep{Mill2011-ah} or rejected a priori as incapable of producing DD \citep{Yarden2017-eh}. However, neuronal adaptation, i.e., an experience-dependent reduction in intrinsic neuronal sensitivity independent of synaptic function, is a common phenomenon in excitatory neurons \citep{Sanchez-Vives2000-df, Henze2001-xd, Sanchez-Aguilera2014-fd, Teeter2018-iz} that has been successfully used to model stimulus-specific adaptation (SSA), a precursor to and prerequisite for DD \citep{Garagnani2011-eu}. Neuronal adaptation is well placed to play a role in DD: It establishes quickly and recovers over the course of up to several seconds \citep{Henze2001-xd, Pozzorini2015-ei}, allowing it to act as a memory of recent activity in a neuron.
-
-Here, we investigate how neuronal threshold adaptation can lead to deviance detection. Specifically, we use a spatially constrained, randomly connected network of point neurons with spike-triggered threshold adaptation and show that deviance detection emerges from this mechanism alone, requiring neither synaptic plasticity nor a tightly defined network structure. Furthermore, we model the conjunction of both neuronal and synaptic short-term plasticity, and study how these mechanisms interact within the network as it processes regular and irregular stimulus sequences.
-
-
-% Interactions between forms of plasticity:
-% Single-cell level, in physiology: Buonomano1998-hf
-% Single-cell modelled TA/STD interaction => oscillations, Mejias2011-rv
-% At a single synapse: Tsodyks1997-qt, Varela1997-nr, Hennig2008-sc, Mondal2022-av
-% Short / long, in physiology: Davies1991-kf, Iezzi2011-vb; in modelling Deperrois2020-sp
-% Sequence processing = different responses to repeats of the same input with STD/STF: cortical circuit model Buonomano1995-gq, hippocampus physiology Buonomano1997-ms
-% Gating/Filtering by balance of depression and facilitation: Anwar2017-qg, Mondal2022-av
-
-% Short-term plasticity as a memory mechanism: Jaaskelainen2011-cb
 
 \section{Methods}\label{sec-methods}
 
@@ -364,7 +343,7 @@ We note that the direct and indirect effects of STD on global suppression appear
 
 \section{Discussion}\label{sec-discussion}
 
-TODO
+
 
 \begin{figure*}%
     \centering
@@ -372,38 +351,7 @@ TODO
     \caption{}
     \label{fig9}
 \end{figure*}
-% TODO 9: Needs to be more generic, not specific to the task. Show the process, step by step.
-
-% No tuning required to get DDI!
-
-% Culture, rats, humans...
-
-% Response of a 2 $\times$ 4~mm neuronal cell culture on a multi-electrode array, adapted from \cite{Kubota2021-dx}. Curves represent the average number of spikes per electrode in each 10~ms bin in response to target stimulation in the indicated sequence. Unlike in our study, oddball sequences here were split 10\%/90\%, and 10 equally frequent stimuli were used for the msc sequence.
-
-% adaptation vs deviance detection, in the context of pred coding, means DD is derived from some pred/err interaction, cf Fong+20
-% deviant-alone always highest, cf. Taaseh2011-gg
-
-% Replacement vs adaptation is not a clean separation, since $\theta$ is affected by replacement, but modulates adaptation
-
-% The prime effect of TA (reduce std by local suppression, relieve global suppression for a larger dev) is repeated with STD, in exactly the same way, just weaker.
-% What makes the two synergise is precisely this symmetry: STD reduces std by local suppression, which relieves not only STD-related global suppression, but also TA-related global suppression. And, of course, vice versa!
-% On the other hand, theoretical expectations lead us to expect competition to occur in the area of local suppression: Such suppression has diminishing returns; in the extreme case, if one mechanism reduces the response to zero, the other mechanism is left without room for further reductions. Or: If each mechanism independently cuts the response in half, then we should expect a quarter of the response to remain
-
-% Spatial overlap
-% Structure
-% Omission
-% Time (ISI <> tau)
-% Neurobiology
-% long-term plasticity
-% Spontaneous activity
-% Prediction signals that cancel expected inputs would reduce adaptation
-% Testable predictions. Eg: Block NMDA, spontaneous activity, TA-related channels; easier: early vs late subpopulations
-
-% Vandael2020-qw report short-term facil, suggest its capability to interact multiplicatively with other forms of plasticity
-
-% Dranias2013-ws report short-term stimulus memory in dissociated culture with time scales similar to our model
-
-% Yarden2017-eh explain DD in their model (columns firing population spikes, suppression via STD) in a similar manner to my loc/glob suppression model, but without explicitly showing the interaction 
+\textbf{Fig. 8} TODO
 
 
 
