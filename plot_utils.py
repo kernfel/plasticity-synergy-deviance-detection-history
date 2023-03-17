@@ -55,6 +55,12 @@ def label_panel(ax, ord, lower=False, left=1):
     return lb
 
 
+def fullwidth(height):
+    return styling.fig_width, height * styling.fig_width / 6.29
+def halfwidth(height):
+    return styling.fig_width/2, height * styling.fig_width/2 / 3
+
+
 # From http://www.ccctool.com/html_v_0_9_0_3/CCC_Tool/cccTool.html
 ccc_divergent = LinearSegmentedColormap.from_list(
     'ccc_divergent', list(zip([0, .16, .35, .5, .62, .8, 1],
