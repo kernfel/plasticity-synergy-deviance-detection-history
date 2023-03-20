@@ -601,7 +601,7 @@
     "panel_ddi_stats_2(ax)\n",
     "pu.label_panel(ax, 3)\n",
     "\n",
-    "plt.savefig('paper-1/fig2.pdf')"
+    "plt.savefig('paper-1/fig-dd.pdf')"
    ]
   }
  ],
