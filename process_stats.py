@@ -20,7 +20,7 @@ def get_bspikes(res, episode):
 def get_stats(cfg, isi, templ, early=100):
     '''
     Computes a bunch of stats across networks and stimuli.
-    Requires data coming from `process_suppression.py` in the default file locations.
+    Requires that process_suppression.process_to_disk has been run with the same args.
     Args:
         early: int, number of neurons to consider in the "early" subpopulation
     '''
@@ -114,10 +114,21 @@ def get_stats(cfg, isi, templ, early=100):
         'dD_B_late': dD_B_late}
 
 
-if __name__ == '__main__':
-    import conf.isi5_500 as cfg
-    isi = cfg.ISIs[0]
-    templ = 0
-    
+def process_to_disk(cfg, isi = None, templ = 0):
+    if isi is None:
+        isi = cfg.ISIs[0]
     stats = get_stats(cfg, isi, templ)
     dd.io.save(out_fname, stats)
+
+
+if __name__ == '__main__':
+    import sys
+    import importlib
+
+    if len(sys.argv) > 1:
+        conf = '.'.join(sys.argv[1].split('.')[0].split('/'))
+    else:
+        conf = 'conf.isi5_500'
+
+    cfg = importlib.import_module(conf)
+    process_to_disk(cfg)

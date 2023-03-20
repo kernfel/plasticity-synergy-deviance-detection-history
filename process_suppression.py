@@ -70,13 +70,25 @@ def get_suppression(cfg, isi, templ, TA):
     return Rdata, TAdata, Ddata
 
 
-if __name__ == '__main__':
-    import conf.isi5_500 as cfg
-    isi = cfg.ISIs[0]
-    templ = 0
+def process_to_disk(cfg, isi = None, templ = 0):
+    if isi is None:
+        isi = cfg.ISIs[0]
 
     R, T, D = get_suppression(cfg, isi, templ, 0)
     dd.io.save(out_fname.format(TA=0), {'R': R, 'D': D})
 
     R, T, D = get_suppression(cfg, isi, templ, 1)
     dd.io.save(out.fname.format(TA=1), {'R': R, 'T': T, 'D': D})
+
+
+if __name__ == '__main__':
+    import sys
+    import importlib
+
+    if len(sys.argv) > 1:
+        conf = '.'.join(sys.argv[1].split('.')[0].split('/'))
+    else:
+        conf = 'conf.isi5_500'
+
+    cfg = importlib.import_module(conf)
+    process_to_disk(cfg)
