@@ -16,7 +16,6 @@ colors = {
     'Depression': '#9b19f5',
     'Threshold': 'C2',
     'Synapses': 'orange',
-    'Reset': 'slategrey',
     'Vm': 'orange'
 }
 
@@ -42,7 +41,6 @@ labels = {
     'Depression': '$V_{STD}$ (mV)',
     'Threshold': f'${T()}$ (mV)',
     'Synapses': '$V_{syn}$ (mV)',
-    'Reset': '$V_{reset}$ (mV)',
     'Vm': '$V_m$ (mV)'
 }
 
