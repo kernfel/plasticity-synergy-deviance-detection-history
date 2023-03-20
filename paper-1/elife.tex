@@ -73,8 +73,8 @@ with $\tau_m = 30$~ms the membrane time constant and $V_{rest} = -60$~mV the res
 \end{equation}
 with $E_e = 0$~mV and $E_i = -100$~mV the excitatory and inhibitory reversal potentials, respectively. Synaptic conductances evolved according to
 \begin{align} 
-    \tau_e \frac{dg_e}{dt} &= -g_e + \sum_{j \in \boldsymbol E} U x_j w \delta(t - \hat{t_j}) \nonumber \\
-    \tau_i \frac{dg_i}{dt} &= -g_i + \sum_{j \in \boldsymbol I} w \delta(t - \hat{t_j}) \label{eq:gsyn}
+    \tau_e \frac{dg_e}{dt} &= -g_e + \sum_{j \in \boldsymbol E} U x_j w \delta(t - \hat{t}_j) \nonumber \\
+    \tau_i \frac{dg_i}{dt} &= -g_i + \sum_{j \in \boldsymbol I} w \delta(t - \hat{t}_j) \label{eq:gsyn}
 \end{align}
 with $\tau_e = 2$~ms the excitatory time constant, echoing AMPA receptor dynamics \citep{Hausser1997-cn}, $\tau_i = 4$~ms the inhibitory time constant, echoing GABA-A receptor dynamics \citep{Destexhe1994-oc}, $\boldsymbol E$ and $\boldsymbol I$ the sets of presynaptic excitatory and inhibitory neurons, respectively, $w$ the synaptic weight, $\delta(\cdot)$ the Dirac delta function, and $\hat{t}$ the spike times.
 
