@@ -1,0 +1,36 @@
+import numpy as np
+import deepdish as dd
+
+from readout import load_results
+from digest import conds
+
+out_fname = 'nspikes.h5'
+
+
+def get_nspikes(cfg, isi, templ):
+    '''
+    Retrieves the average number of spikes per trial, summed across the entire network.
+    Structure: {STD: {TA: {cond: ndarray(nets*pairs*2)}}}
+    '''
+    nspikes = {STD: {TA: {cond: [] for cond in conds} for TA in cfg.TAs} for STD in cfg.STDs}
+    for STD in cfg.STDs:
+        for TA in cfg.TAs:
+            for net in range(cfg.N_networks):
+                res = load_results(cfg.fname.format(net=net, isi=isi, STD=STD, TA=TA, templ=templ), compress=True, process_dynamics=False)
+                for ipair, pair in enumerate(cfg.pairings):
+                    for istim, stim in enumerate(pair):
+                        for cond in conds:
+                            data = res['spikes'][ipair][stim][cond]
+                            nspikes[STD][TA][cond].append(data['nspikes'].sum(1).mean())
+                            
+            nspikes[STD][TA] = {cond: np.asarray(x) for cond, x in nspikes[STD][TA].items()}
+    return nspikes
+
+
+if __name__ == '__main__':
+    import conf.isi5_500 as cfg
+    isi = cfg.ISIs[0]
+    templ = 0
+
+    nspikes = get_nspikes(cfg, isi, templ)
+    dd.io.save(out_fname, nspikes)
