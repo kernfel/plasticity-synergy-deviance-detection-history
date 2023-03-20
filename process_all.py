@@ -2,10 +2,11 @@ import process_nspikes as nspikes
 import process_contrasts as contrasts
 import process_suppression as suppr
 import process_stats as stats
+import process_distance as distance
 
 
 def process_to_disk(cfg, isi, templ):
-    for module in (nspikes, contrasts, suppr, stats):
+    for module in (nspikes, contrasts, suppr, distance, stats):
         module.process_to_disk(cfg, isi, templ)
 
 
