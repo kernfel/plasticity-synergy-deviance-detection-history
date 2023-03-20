@@ -15,18 +15,16 @@ from readout import load_results
 
 
 conds = ('std', 'msc', 'dev')
-voltage_measures = ('Activity', 'Depression', 'Threshold')#, 'Synapses')
+voltage_measures = ('Activity', 'Depression', 'Threshold')
 
 
 def get_voltages(params, dynamics, overflow=None):
     depression = ensure_unit(dynamics['u'] - dynamics['v'], volt)
     threshold = ensure_unit(dynamics['th_adapt'], volt)
-    synapses = ensure_unit(dynamics['vsyn'], volt) + depression  # vsyn + depr = vsyn + u-v = usyn
     vm = ensure_unit(dynamics['v'], volt)
     return {
         'Depression': depression,
         'Threshold': threshold,
-        'Synapses': synapses,
         'Vm': vm}
 
 

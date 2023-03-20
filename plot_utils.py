@@ -15,7 +15,6 @@ colors = {
     'msc': 'b',
     'Depression': '#9b19f5',
     'Threshold': 'C2',
-    'Synapses': 'orange',
     'Vm': 'orange'
 }
 
@@ -40,7 +39,6 @@ labels = {
     'pspike': 'Spike probability',
     'Depression': '$V_{STD}$ (mV)',
     'Threshold': f'${T()}$ (mV)',
-    'Synapses': '$V_{syn}$ (mV)',
     'Vm': '$V_m$ (mV)'
 }
 
