@@ -57,6 +57,7 @@ def get_contrasts(cfg, isi, templ):
                     for c in contrast
                 ])
                 for measure, contrast in contrasts[STD][TA].items()}
+            print()
     
     return contrasts
 

@@ -93,6 +93,7 @@ def get_stats(cfg, isi, templ, early=100):
                             dD_B_early[TA][k] = np.median(dD[early_B])
                             dD_B_late[TA][k] = np.median(dD[late_B])
                 print(net, end=' ', flush=True)
+            print()
     dTA_A = {STD: [] for STD in cfg.STDs}
     for STD in cfg.STDs:
         for k, ta in enumerate(TAdata[STD]):
