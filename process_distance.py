@@ -138,8 +138,6 @@ def get_distance(cfg, isi, templ, **kwargs):
     TA, STD = 1, 1
     distconf = get_distconf(cfg, **kwargs)
 
-    distances, counts = [{cond: np.full((cfg.N_networks*len(cfg.pairings)*2, cfg.params['sequence_length']*cfg.params['sequence_count']), np.nan)
-                                for cond in conds} for _ in range(2)]
     disthist = {cond: np.full((cfg.N_networks*len(cfg.pairings)*2, cfg.params['sequence_length']*cfg.params['sequence_count'], distconf['full']['args']['bins']), np.nan)
                 for cond in conds}
     distrough = {cond: np.full((cfg.N_networks*len(cfg.pairings)*2, cfg.params['sequence_length']*cfg.params['sequence_count'], 2), np.nan)
@@ -180,8 +178,6 @@ def get_distance(cfg, isi, templ, **kwargs):
                 ep_fine_STD, ep_rough_STD = get_STD_distrib(distconf, res, episode, stim_distances, R, Wb)
                 i = 4*net + 2*ipair + istim
 
-                distances['dev'][i, target] = dist[target]
-                counts['dev'][i, target] = count[target]
                 disthist['dev'][i, target] = hist[target]
                 distrough['dev'][i, target] = rough[target]
                 fine_TA['dev'][i, target] = ep_fine_TA[target]
@@ -189,8 +185,6 @@ def get_distance(cfg, isi, templ, **kwargs):
                 fine_STD['dev'][i, target] = ep_fine_STD[target]
                 rough_STD['dev'][i, target] = ep_rough_STD[target]
 
-                distances['std'][i, ~target] = dist[~target]
-                counts['std'][i, ~target] = count[~target]
                 disthist['std'][i, ~target] = hist[~target]
                 distrough['std'][i, ~target] = rough[~target]
                 fine_TA['std'][i, ~target] = ep_fine_TA[~target]
@@ -199,8 +193,6 @@ def get_distance(cfg, isi, templ, **kwargs):
                 rough_STD['std'][i, ~target] = ep_rough_STD[~target]
 
                 msc_target = res['sequences'][0] == cfg.stimuli[stim]
-                distances['msc'][i, msc_target] = msc_dist[msc_target]
-                counts['msc'][i, msc_target] = msc_count[msc_target]
                 disthist['msc'][i, msc_target] = msc_hist[msc_target]
                 distrough['msc'][i, msc_target] = msc_rough[msc_target]
                 fine_TA['msc'][i, msc_target] = msc_fine_TA[msc_target]
@@ -210,18 +202,18 @@ def get_distance(cfg, isi, templ, **kwargs):
 
                 histbase[i], roughbase[i] = get_hist_base(distconf, stim_distances, cfg.stimuli[stim])
         print(net, end=' ')
-
+    
     return {
-        'distances': distances,
-        'counts': counts,
-        'disthist': disthist,
-        'distrough': distrough,
+        'disthist_initial': np.nanmean(np.concatenate([d[:, 0] for d in disthist.values()], 0), 0),
+        'distrough_initial': np.nanmean(np.concatenate([d[:, 0] for d in distrough.values()], 0), 0),
+        'disthist_steady': {cond: np.nanmean(disthist[cond][:, 1:], (0,1)) for cond in conds},
+        'fine_TA_steady': {cond: np.nanmean(fine_TA[cond][:, 1:], (0,1)) for cond in conds},
+        'fine_STD_steady': {cond: np.nanmean(fine_STD[cond][:, 1:], (0,1)) for cond in conds},
+        'distrough_steady_nets': {cond: np.nanmean(distrough[cond][:, 1:], 1) for cond in conds},
+        'rough_TA_steady_nets': {cond: np.nanmean(rough_TA[cond][:, 1:], 1) for cond in conds},
+        'rough_STD_steady_nets': {cond: np.nanmean(rough_STD[cond][:, 1:], 1) for cond in conds},
         'histbase': histbase,
         'roughbase': roughbase,
-        'fine_TA': fine_TA,
-        'fine_STD': fine_STD,
-        'rough_TA': rough_TA,
-        'rough_STD': rough_STD,
         'distconf': distconf
     }
 
