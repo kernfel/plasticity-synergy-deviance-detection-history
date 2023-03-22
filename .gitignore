@@ -7,5 +7,6 @@ tmp/
 GeNNworkspace/
 GPU0/
 GPU1/
-data/
+data/*
+!data/README
 *.pdf
