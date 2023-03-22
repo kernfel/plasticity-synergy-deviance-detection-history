@@ -13,8 +13,10 @@ def get_nspikes(cfg, isi, templ):
     Structure: {STD: {TA: {cond: ndarray(nets*pairs*2)}}}
     '''
     nspikes = {STD: {TA: {cond: [] for cond in conds} for TA in cfg.TAs} for STD in cfg.STDs}
+    print('get_nspikes ...')
     for STD in cfg.STDs:
         for TA in cfg.TAs:
+            print(f'STD {STD}, TA {TA} ...')
             for net in range(cfg.N_networks):
                 res = load_results(cfg.fname.format(net=net, isi=isi, STD=STD, TA=TA, templ=templ), compress=True, process_dynamics=False)
                 for ipair, pair in enumerate(cfg.pairings):
@@ -22,7 +24,8 @@ def get_nspikes(cfg, isi, templ):
                         for cond in conds:
                             data = res['spikes'][ipair][stim][cond]
                             nspikes[STD][TA][cond].append(data['nspikes'].sum(1).mean())
-                            
+                print(net, end=' ', flush=True)
+
             nspikes[STD][TA] = {cond: np.asarray(x) for cond, x in nspikes[STD][TA].items()}
     return nspikes
 
