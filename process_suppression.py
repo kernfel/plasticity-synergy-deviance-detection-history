@@ -48,7 +48,6 @@ def get_suppression_data(res, Wb, ipair, istim, with_threshold=True, with_depres
 
 
 def get_suppression(cfg, isi, templ, TA):
-    isi, TA, templ = 500, 1, 0
     Rdata, TAdata, Ddata = [{STD: [] for STD in cfg.STDs} for _ in range(3)]
     print('get_suppression')
     for STD in cfg.STDs:
