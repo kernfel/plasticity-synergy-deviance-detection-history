@@ -1,16 +1,19 @@
-from .isi5 import *
+from .params import params
 
-del gpuid
-
-fbase_500 = '/data/felix/culture/isi5-500/isi5_'
-fname = fname.replace(fbase, fbase_500)
-netfile = netfile.replace(fbase, fbase_500)
-digestfile = digestfile.replace(fbase, fbase_500)
-fbase = fbase_500
-
-raw_fbase = fname[:-3]
-
-ISIs = (500,)
+N_networks = 30
 N_templates = 1
+N_templates_with_dynamics = 1
+STDs = (0,1)
+TAs = (0,1)
+ISIs = (500,)
+fbase = 'data/isi5-500/isi5_'
+raw_fbase = fbase + 'net{net}_isi{isi}_STD{STD}_TA{TA}_templ{templ}'
+fname = raw_fbase + '.h5'
+netfile = fbase + 'net{net}.h5'
+digestfile = fbase + '{kind}.h5'
 
-start_at = {'newnet': False, 'newtempl': False}
+stimuli = {key: j for j, key in enumerate('ABCDE')}
+pairings=(('A','B'), ('C','E'))
+
+contrib_cutoff = .8
+minimum_active_fraction = .5
