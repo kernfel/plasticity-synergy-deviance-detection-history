@@ -79,7 +79,7 @@ def process_to_disk(cfg, isi = None, templ = 0):
     dd.io.save(out_fname.format(TA=0), {'R': R, 'D': D})
 
     R, T, D = get_suppression(cfg, isi, templ, 1)
-    dd.io.save(out.fname.format(TA=1), {'R': R, 'T': T, 'D': D})
+    dd.io.save(out_fname.format(TA=1), {'R': R, 'T': T, 'D': D})
 
 
 if __name__ == '__main__':
