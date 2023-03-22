@@ -1,3 +1,4 @@
+import os
 from distutils.log import warn
 from importlib import import_module
 from itertools import count
@@ -286,6 +287,7 @@ def save_results(fname, rundata):
     elide = ['dynamics', 'spikes']
     if rundata.get('raw_fbase', None) is not None:
         elide += ['raw_dynamics']
+    os.makedirs(os.path.dirname(os.path.abspath(fname)), exist_ok=True)
     dd.io.save(fname, {k:v for k,v in rundata.items() if k not in elide})
 
 
