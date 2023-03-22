@@ -66,7 +66,7 @@ def get_suppression(cfg, isi, templ, TA):
                     Rdata[STD].append(data[0])
                     TAdata[STD].append(data[1])
                     Ddata[STD].append(data[2])
-            print(net, end=' ')
+            print(net, end=' ', flush=True)
     return Rdata, TAdata, Ddata
 
 

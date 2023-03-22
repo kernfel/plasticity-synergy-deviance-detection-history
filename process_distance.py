@@ -201,7 +201,7 @@ def get_distance(cfg, isi, templ, **kwargs):
                 rough_STD['msc'][i, msc_target] = msc_rough_STD[msc_target]
 
                 histbase[i], roughbase[i] = get_hist_base(distconf, stim_distances, cfg.stimuli[stim])
-        print(net, end=' ')
+        print(net, end=' ', flush=True)
     
     return {
         'disthist_initial': np.nanmean(np.concatenate([d[:, 0] for d in disthist.values()], 0), 0),

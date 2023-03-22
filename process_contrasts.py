@@ -48,7 +48,7 @@ def get_contrasts(cfg, isi, templ):
                             c = (hist['dev'][measure] - hist['msc'][measure])/mV
                             # Weight with pdiff contrast, and sum valid entries over neurons
                             contrasts[STD][TA][measure].append(np.nansum(c*pdiff, 0))
-                print(net, end=' ')
+                print(net, end=' ', flush=True)
             
             # Stack everything in {STD: {TA: {measure: ...}}} into a (nets*pairs*2, tmax_v) ndarray
             contrasts[STD][TA] = {
